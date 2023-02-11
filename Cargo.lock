@@ -1928,6 +1928,7 @@ name = "rust-ui-test-iced"
 version = "0.1.0"
 dependencies = [
  "iced",
+ "iced_native",
  "once_cell",
 ]
 

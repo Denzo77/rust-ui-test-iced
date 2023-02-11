@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 iced = { version = "0.7.0", features = ["image"] }
+iced_native = "0.8.0"
+# iced_aw = { version = "0.3.0", features = ["grid"] }
 once_cell = "1.17.0"

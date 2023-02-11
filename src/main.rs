@@ -1,7 +1,13 @@
+use std::path::{PathBuf, Path};
+
 use iced::widget::scrollable::Properties;
-use iced::widget::{button, column, row, text, scrollable, slider, radio, container, progress_bar, vertical_space, horizontal_space};
+use iced::widget::{button, column, row, text, scrollable, slider, radio, container, progress_bar, vertical_space, horizontal_space, image};
 use iced::{Settings, Alignment, Application, Theme, executor, Command, Length, Element, Color, theme, Renderer};
 use once_cell::sync::Lazy;
+
+mod grid;
+use crate::grid::Grid;
+
 
 static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
@@ -11,29 +17,19 @@ fn main() -> iced::Result {
 
 
 struct Demo {
-    scrollable_direction: Direction,
     scrollbar_width: u16,
     scrollbar_margin: u16,
     scroller_width: u16,
+    zoom: u16,
     current_scroll_offset: scrollable::RelativeOffset,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Direction {
-    Vertical,
-    Horizontal,
-    Multi,
+    images: Vec<ImageTile>,
 }
 
 #[derive(Debug, Clone, Copy)]
 enum Message {
-    SwitchDirection(Direction),
-    ScrollbarWidthChanged(u16),
-    ScrollbarMarginChanged(u16),
-    ScrollerWidthChanged(u16),
     ScrollToBeginning,
-    ScrollToEnd,
     Scrolled(scrollable::RelativeOffset),
+    ZoomChanged(u16),
 }
 
 impl Demo {
@@ -53,13 +49,17 @@ impl Application for Demo {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Message>) {
+        let images = ["resources/still_1.jpeg", "resources/still_2.png", "resources/still_3.webp"];
+        let images = images.iter().enumerate().map(|(i, &p)| ImageTile::load(i as u32, p)).collect();
+
         (
             Self {
-                scrollable_direction: Direction::Vertical,
                 scrollbar_width: 10,
                 scrollbar_margin: 0,
                 scroller_width: 10,
+                zoom: 256,
                 current_scroll_offset: scrollable::RelativeOffset::START,
+                images
             },
             Command::none(),
         )
@@ -71,151 +71,47 @@ impl Application for Demo {
 
     fn update(&mut self, message: Self::Message) -> Command<Message> {
         match message {
-            Message::SwitchDirection(direction) => {
-                self.current_scroll_offset = scrollable::RelativeOffset::START;
-                self.scrollable_direction = direction;
-
-                scrollable::snap_to(SCROLLABLE_ID.clone(), self.current_scroll_offset)
-            },
-            Message::ScrollbarWidthChanged(width) => {
-                self.scrollbar_width = width;
-                Command::none()
-            },
-            Message::ScrollbarMarginChanged(margin) => {
-                self.scrollbar_margin = margin;
-                Command::none()
-            },
-            Message::ScrollerWidthChanged(width) => {
-                self.scroller_width = width;
-                Command::none()
-            },
             Message::ScrollToBeginning => {
                 self.current_scroll_offset = scrollable::RelativeOffset::START;
                 scrollable::snap_to(SCROLLABLE_ID.clone(), self.current_scroll_offset)
             },
-            Message::ScrollToEnd => {
-                self.current_scroll_offset = scrollable::RelativeOffset::END;
-                scrollable::snap_to(SCROLLABLE_ID.clone(), self.current_scroll_offset)
-            },
             Message::Scrolled(offset) => {
                 self.current_scroll_offset = offset;
+                Command::none()
+            },
+            Message::ZoomChanged(zoom) => {
+                self.zoom = zoom;
                 Command::none()
             }
         }
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
-        let scrollbar_width_slider = slider(0..=15, self.scrollbar_width, Message::ScrollbarWidthChanged);
-        let scrollbar_margin_slider = slider(0..=15, self.scrollbar_margin, Message::ScrollbarMarginChanged);
-        let scroller_width_slider = slider(0..=15, self.scroller_width, Message::ScrollerWidthChanged);
+        let zoom_slider = slider(50..=512, self.zoom, Message::ZoomChanged);
 
-        let scroll_slider_controls = column!(
-                text("Scrollbar width:"), scrollbar_width_slider,
-                text("Scrollbar margin:"), scrollbar_margin_slider,
-                text("Scroller width:"), scroller_width_slider)
-            .spacing(10)
-            .width(Length::Fill);
-
-        let scroll_orientation_controls = column!(
-                text("Scrollbar direction:"),
-                radio("Vertical", Direction::Vertical, Some(self.scrollable_direction), Message::SwitchDirection),
-                radio("Horizontal", Direction::Horizontal, Some(self.scrollable_direction), Message::SwitchDirection),
-                radio("Both", Direction::Multi, Some(self.scrollable_direction), Message::SwitchDirection))
-            .spacing(10)
-            .width(Length::Fill);
-        
-        let scroll_controls = row!(scroll_slider_controls, scroll_orientation_controls)
-                                .spacing(20)
-                                .width(Length::Fill);
-        
-        let scroll_to_end = || { button("Scroll to end").padding(10).on_press(Message::ScrollToEnd) };
         let scroll_to_beginning = || { button("Scroll to beginning").padding(10).on_press(Message::ScrollToBeginning) };
-        let scrollable_content: Element<Message> = Element::from(match self.scrollable_direction {
-            Direction::Vertical => scrollable(column!(
-                        scroll_to_end(),
-                        text("Beginning"),
-                        vertical_space(Length::Units(1200)),
-                        text("Middle"),
-                        vertical_space(Length::Units(1200)),
-                        text("End"),
-                        scroll_to_beginning(),
-                    )
-                    .width(Length::Fill)
-                    .align_items(Alignment::Center)
-                    .padding([40, 0, 40, 0])
-                    .spacing(40)
+
+        let scrollable_content: Element<Message> = Element::from(scrollable(
+                column!(
+                    Grid::with_children(self.images.iter()
+                        .map(|img| img.view(Length::Units(self.zoom))).collect())
+                        .column_width(self.zoom),
+                    scroll_to_beginning()
                 )
-                .height(Length::Fill)
-                .vertical_scroll(Properties::new().width(self.scrollbar_width)
-                                                              .margin(self.scrollbar_margin)
-                                                              .scroller_width(self.scroller_width))
-                .id(SCROLLABLE_ID.clone())
-                .on_scroll(Message::Scrolled),
-            Direction::Horizontal => scrollable(row!(
-                        scroll_to_end(),
-                        text("Beginning"),
-                        horizontal_space(Length::Units(1200)),
-                        text("Middle"),
-                        horizontal_space(Length::Units(1200)),
-                        text("End"),
-                        scroll_to_beginning(),
-                    )
-                    .height(Length::Units(450))
-                    .align_items(Alignment::Center)
-                    .padding([40, 0, 40, 0])
-                    .spacing(40)
-                )
-                .height(Length::Fill)
-                .horizontal_scroll(Properties::new().width(self.scrollbar_width)
+                .width(Length::Fill)
+                .align_items(Alignment::Center)
+                .padding([40, 0, 40, 0])
+                .spacing(40)
+            )
+            .height(Length::Fill)
+            .vertical_scroll(Properties::new().width(self.scrollbar_width)
                                                             .margin(self.scrollbar_margin)
                                                             .scroller_width(self.scroller_width))
-                .id(SCROLLABLE_ID.clone())
-                .on_scroll(Message::Scrolled),
-            Direction::Multi => scrollable(row!(
-                        column!(text("lets scroll"), vertical_space(Length::Units(2400))),
-                        scroll_to_end(),
-                        text("Horizontal - Beginning"),
-                        horizontal_space(Length::Units(1200)),
-                        column!(
-                                text("Horizontal - Middle"),
-                                scroll_to_end(),
-                                text("Vertical - Beginning"),
-                                vertical_space(Length::Units(1200)),
-                                text("Vertical - Middle"),
-                                vertical_space(Length::Units(1200)),
-                                text("Vertical - End"),
-                                scroll_to_beginning(),
-                                vertical_space(Length::Units(40)),
-                            )
-                            .align_items(Alignment::Fill)
-                            .spacing(40),
-                        horizontal_space(Length::Units(1200)),
-                        text("Horizontal - End"),
-                        scroll_to_beginning(),
-                    )
-                    .align_items(Alignment::Center)
-                    .padding([40, 0, 40, 0])
-                    .spacing(40)
-                )
-                .height(Length::Fill)
-                .vertical_scroll(self.scrollbar_properties())
-                .horizontal_scroll(self.scrollbar_properties())
-                .id(SCROLLABLE_ID.clone())
-                .on_scroll(Message::Scrolled),
-        });
+            .id(SCROLLABLE_ID.clone())
+            .on_scroll(Message::Scrolled),
+        );
 
-        let progress_bars: Element<Message> = match self.scrollable_direction {
-            Direction::Vertical => vertical_progress_bar(self.current_scroll_offset.y).into(),
-            Direction::Horizontal => horizontal_progress_bar(self.current_scroll_offset.x).into(),
-            Direction::Multi => column!(vertical_progress_bar(self.current_scroll_offset.y),
-                                        horizontal_progress_bar(self.current_scroll_offset.x))
-                .spacing(10)
-                .into(),
-        };
-
-        let content: Element<Message> = column!(scroll_controls, scrollable_content, progress_bars)
-            .spacing(10)
-            .into();
+        let content: Element<Message> = column!(scrollable_content, zoom_slider).spacing(10).into();
 
         container(content)
             .width(Length::Fill).height(Length::Fill)
@@ -230,25 +126,26 @@ impl Application for Demo {
     }
 }
 
-fn vertical_progress_bar(value: f32) -> iced::widget::ProgressBar<Renderer> {
-    progress_bar(0.0..=1.0, value)
+
+struct ImageTile {
+    uid: u32,
+    path: PathBuf,
+    handle: image::Handle,
 }
 
-fn horizontal_progress_bar(value: f32) -> iced::widget::ProgressBar<Renderer> {
-    progress_bar(0.0..=1.0, value).style(theme::ProgressBar::Custom(Box::new(ProgressBarCustomStyle)))
-}
-
-
-struct ProgressBarCustomStyle;
-
-impl progress_bar::StyleSheet for ProgressBarCustomStyle {
-    type Style = Theme;
-
-    fn appearance(&self, style: &Self::Style) -> progress_bar::Appearance {
-        progress_bar::Appearance {
-            background: style.extended_palette().background.strong.color.into(),
-            bar: Color::from_rgb8(250, 85, 134).into(),
-            border_radius: 0.0,
+impl ImageTile {
+    fn load(uid: u32, path: &str) -> Self {
+        Self {
+            uid,
+            path: path.into(),
+            handle: image::Handle::from_path(path),
         }
+    }
+
+    fn view(&self, size: Length) -> Element<Message> {
+        image::Image::new(self.handle.clone())
+            .width(size)
+            .height(size)
+            .into()
     }
 }
