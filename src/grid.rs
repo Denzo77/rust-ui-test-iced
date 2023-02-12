@@ -54,7 +54,7 @@ where
 
     pub fn with_children(children: Vec<Element<'a, Message, Renderer>>) -> Self {
         Self {
-            strategy: Strategy::Columns(1),
+            strategy: Strategy::default(),
             elements: children,
         }
     }
