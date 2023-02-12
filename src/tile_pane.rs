@@ -1,8 +1,12 @@
 use std::path::PathBuf;
+use once_cell::sync::Lazy;
 
-use iced::{widget::{scrollable, image}, Length, Element};
+use iced::{widget::{scrollable, image, slider, button, column}, Length, Element, Command, Alignment};
+
+use crate::grid::Grid;
 
 const DEFAULT_TILE_SIZE: u16 = 128;
+static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
 #[derive(Debug, Clone, Copy)]
 pub enum ScrollMessage {
@@ -29,6 +33,49 @@ impl TilePane {
             images,
         }
     }
+
+    pub fn update(&mut self, message: ScrollMessage) -> Command<ScrollMessage> {
+        match message {
+            ScrollMessage::ScrollToBeginning => {
+                self.scroll_offset = scrollable::RelativeOffset::START;
+                scrollable::snap_to(SCROLLABLE_ID.clone(), self.scroll_offset)
+            },
+            ScrollMessage::Scrolled(offset) => {
+                self.scroll_offset = offset;
+                Command::none()
+            },
+            ScrollMessage::ZoomChanged(zoom) => {
+                self.tile_size = zoom;
+                Command::none()
+            }
+        }
+    }
+
+    pub fn view(&self) -> iced::Element<'_, ScrollMessage> {
+        let zoom_slider = slider(50..=512, self.tile_size, ScrollMessage::ZoomChanged);
+
+        let scroll_to_beginning = || { button("Scroll to beginning").padding(10).on_press(ScrollMessage::ScrollToBeginning) };
+
+        let scrollable_content: Element<ScrollMessage> = Element::from(scrollable(
+                column!(
+                    Grid::with_children(self.images.iter()
+                        .map(|img| img.view(Length::Units(self.tile_size))).collect())
+                        .column_width(self.tile_size),
+                    scroll_to_beginning()
+                )
+                .width(Length::Fill)
+                .align_items(Alignment::Center)
+                .padding([40, 0, 40, 0])
+                .spacing(40)
+            )
+            .height(Length::Fill)
+            .vertical_scroll(theming::scrollbar_properties())
+            .id(SCROLLABLE_ID.clone())
+            .on_scroll(ScrollMessage::Scrolled),
+        );
+
+        column!(scrollable_content, zoom_slider).spacing(10).into()
+    }
 }
 
 
@@ -54,4 +101,15 @@ impl ImageTile {
             .height(size)
             .into()
     }
+}
+
+mod theming {
+    use iced::widget::scrollable::Properties;
+
+    pub fn scrollbar_properties() -> Properties {
+        Properties::new()
+            .width(10)
+            .margin(0)
+            .scroller_width(10)
+    }    
 }
