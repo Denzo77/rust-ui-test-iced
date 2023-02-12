@@ -1,0 +1,18 @@
+{
+  "input_value": "fasd",
+  "filter": "All",
+  "tasks": [
+    {
+      "description": "task a",
+      "completed": true
+    },
+    {
+      "description": "food",
+      "completed": false
+    },
+    {
+      "description": "foo",
+      "completed": false
+    }
+  ]
+}

@@ -1,11 +1,63 @@
 use std::path::PathBuf;
 use once_cell::sync::Lazy;
 
-use iced::{widget::{scrollable::RelativeOffset, image, slider, button, column}, Length, Element, Alignment};
+use iced::{widget::{scrollable::RelativeOffset, image, slider, button, column, container}, Length, Element, Alignment, Application, executor, Theme, Command};
 use iced::widget::scrollable;
 
 
 use crate::grid::Grid;
+
+pub struct TilePaneDemo {
+    tile_pane: TilePane,
+}
+
+impl Application for TilePaneDemo {
+    type Executor = executor::Default;
+    type Message = ScrollMessage;
+    type Theme = Theme;
+    type Flags = ();
+
+    fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
+        let images = ["resources/still_1.jpeg", "resources/still_2.png", "resources/still_3.webp"];
+        let images = images.iter().enumerate().map(|(i, &p)| ImageTile::load(i as u32, p)).collect();
+
+        
+        (
+            Self {
+                tile_pane: TilePane::from_images(images)
+            },
+            Command::none(),
+        )
+    }
+
+    fn title(&self) -> String {
+        "Counter - Iced".into()
+    }
+
+    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+        match self.tile_pane.update(message) {
+            ScrollCommand::None => Command::none(),
+            ScrollCommand::ScrollToStart { id, offset } => scrollable::snap_to(id, offset),
+        }
+    }
+
+    fn view(&self) -> iced::Element<'_, Self::Message> {
+        let content = self.tile_pane.view();
+
+        container(content)
+            .width(Length::Fill).height(Length::Fill)
+            .padding(40)
+            .center_x()
+            .center_y()
+            .into()
+    }
+
+    fn theme(&self) -> Self::Theme {
+        Theme::Dark
+    }
+}
+
+
 
 const DEFAULT_TILE_SIZE: u16 = 128;
 static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
