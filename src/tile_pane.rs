@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 use once_cell::sync::Lazy;
 
-use iced::{widget::{scrollable, image, slider, button, column}, Length, Element, Command, Alignment};
+use iced::{widget::{scrollable::RelativeOffset, image, slider, button, column}, Length, Element, Alignment};
+use iced::widget::scrollable;
+
 
 use crate::grid::Grid;
 
@@ -10,9 +12,15 @@ static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
 #[derive(Debug, Clone, Copy)]
 pub enum ScrollMessage {
-    ScrollToBeginning,
+    ScrollToStart,
     Scrolled(scrollable::RelativeOffset),
     ZoomChanged(u16),
+}
+
+#[derive(Debug, Clone)]
+pub enum ScrollCommand {
+    None,
+    ScrollToStart { id: scrollable::Id, offset: RelativeOffset }
 }
 
 pub struct TilePane {
@@ -34,19 +42,19 @@ impl TilePane {
         }
     }
 
-    pub fn update(&mut self, message: ScrollMessage) -> Command<ScrollMessage> {
+    pub fn update(&mut self, message: ScrollMessage) -> ScrollCommand {
         match message {
-            ScrollMessage::ScrollToBeginning => {
+            ScrollMessage::ScrollToStart => {
                 self.scroll_offset = scrollable::RelativeOffset::START;
-                scrollable::snap_to(SCROLLABLE_ID.clone(), self.scroll_offset)
+                ScrollCommand::ScrollToStart { id: SCROLLABLE_ID.clone(), offset: self.scroll_offset }
             },
             ScrollMessage::Scrolled(offset) => {
                 self.scroll_offset = offset;
-                Command::none()
+                ScrollCommand::None
             },
             ScrollMessage::ZoomChanged(zoom) => {
                 self.tile_size = zoom;
-                Command::none()
+                ScrollCommand::None
             }
         }
     }
@@ -54,7 +62,7 @@ impl TilePane {
     pub fn view(&self) -> iced::Element<'_, ScrollMessage> {
         let zoom_slider = slider(50..=512, self.tile_size, ScrollMessage::ZoomChanged);
 
-        let scroll_to_beginning = || { button("Scroll to beginning").padding(10).on_press(ScrollMessage::ScrollToBeginning) };
+        let scroll_to_beginning = || { button("Scroll to beginning").padding(10).on_press(ScrollMessage::ScrollToStart) };
 
         let scrollable_content: Element<ScrollMessage> = Element::from(scrollable(
                 column!(

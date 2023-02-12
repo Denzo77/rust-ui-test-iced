@@ -1,6 +1,6 @@
 use iced::widget::{button, column, row, text, scrollable, slider, radio, container, progress_bar, vertical_space, horizontal_space, image};
 use iced::{Settings, Alignment, Application, Theme, executor, Command, Length, Element, Color, theme, Renderer};
-use tile_pane::{ScrollMessage, TilePane};
+use tile_pane::{ScrollMessage, TilePane, ScrollCommand};
 
 mod grid;
 mod tile_pane;
@@ -37,7 +37,10 @@ impl Application for Demo {
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
-        self.tile_pane.update(message)
+        match self.tile_pane.update(message) {
+            ScrollCommand::None => Command::none(),
+            ScrollCommand::ScrollToStart { id, offset } => scrollable::snap_to(id, offset),
+        }
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
