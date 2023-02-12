@@ -17,10 +17,7 @@ fn main() -> iced::Result {
 
 
 struct Demo {
-    scrollbar_width: u16,
-    scrollbar_margin: u16,
-    scroller_width: u16,
-    zoom: u16,
+    tile_size: u16,
     current_scroll_offset: scrollable::RelativeOffset,
     images: Vec<ImageTile>,
 }
@@ -31,16 +28,6 @@ enum Message {
     Scrolled(scrollable::RelativeOffset),
     ZoomChanged(u16),
 }
-
-impl Demo {
-    fn scrollbar_properties(&self) -> Properties {
-        Properties::new()
-            .width(self.scrollbar_width)
-            .margin(self.scrollbar_margin)
-            .scroller_width(self.scroller_width)
-    }
-}
-
 
 impl Application for Demo {
     type Executor = executor::Default;
@@ -54,10 +41,7 @@ impl Application for Demo {
 
         (
             Self {
-                scrollbar_width: 10,
-                scrollbar_margin: 0,
-                scroller_width: 10,
-                zoom: 256,
+                tile_size: 256,
                 current_scroll_offset: scrollable::RelativeOffset::START,
                 images
             },
@@ -80,22 +64,22 @@ impl Application for Demo {
                 Command::none()
             },
             Message::ZoomChanged(zoom) => {
-                self.zoom = zoom;
+                self.tile_size = zoom;
                 Command::none()
             }
         }
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {
-        let zoom_slider = slider(50..=512, self.zoom, Message::ZoomChanged);
+        let zoom_slider = slider(50..=512, self.tile_size, Message::ZoomChanged);
 
         let scroll_to_beginning = || { button("Scroll to beginning").padding(10).on_press(Message::ScrollToBeginning) };
 
         let scrollable_content: Element<Message> = Element::from(scrollable(
                 column!(
                     Grid::with_children(self.images.iter()
-                        .map(|img| img.view(Length::Units(self.zoom))).collect())
-                        .column_width(self.zoom),
+                        .map(|img| img.view(Length::Units(self.tile_size))).collect())
+                        .column_width(self.tile_size),
                     scroll_to_beginning()
                 )
                 .width(Length::Fill)
@@ -104,9 +88,7 @@ impl Application for Demo {
                 .spacing(40)
             )
             .height(Length::Fill)
-            .vertical_scroll(Properties::new().width(self.scrollbar_width)
-                                                            .margin(self.scrollbar_margin)
-                                                            .scroller_width(self.scroller_width))
+            .vertical_scroll(scrollbar_properties())
             .id(SCROLLABLE_ID.clone())
             .on_scroll(Message::Scrolled),
         );
@@ -148,4 +130,11 @@ impl ImageTile {
             .height(size)
             .into()
     }
+}
+
+fn scrollbar_properties() -> Properties {
+    Properties::new()
+        .width(10)
+        .margin(0)
+        .scroller_width(10)
 }
