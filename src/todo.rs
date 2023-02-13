@@ -184,7 +184,7 @@ impl Application for Todos {
 }
 
 #[derive(Debug, Default)]
-struct State {
+pub struct State {
     input_value: String,
     filter: Filter,
     tasks: Vec<Task>,
@@ -269,7 +269,7 @@ impl Task {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum TaskState {
+pub enum TaskState {
     Idle,
     Editing,
 }
@@ -281,7 +281,7 @@ impl Default for TaskState {
 }
 
 #[derive(Debug, Clone)]
-enum TaskMessage {
+pub enum TaskMessage {
     Completed(bool),
     Edit,
     DescriptionEdited(String),
@@ -290,7 +290,7 @@ enum TaskMessage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-enum Filter {
+pub enum Filter {
     All,
     Active,
     Completed,
@@ -313,20 +313,20 @@ impl Default for Filter {
 }
 
 #[derive(Debug, Clone, Copy)]
-enum LoadError {
+pub enum LoadError {
     File,
     Format,
 }
 
 #[derive(Debug, Clone, Copy)]
-enum SaveError {
+pub enum SaveError {
     File,
     Format,
     Write,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct SavedState {
+pub struct SavedState {
     input_value: String,
     filter: Filter,
     tasks: Vec<Task>
@@ -391,7 +391,7 @@ fn loading_message<'a>() -> Element<'a, Message> {
 }
 
 fn empty_message(message: &str) -> Element<'_, Message> {
-    let content = text("message")
+    let content = text(message)
         .width(Length::Fill)
         .size(25)
         .horizontal_alignment(alignment::Horizontal::Center)

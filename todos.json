@@ -8,7 +8,7 @@
     },
     {
       "description": "food",
-      "completed": false
+      "completed": true
     },
     {
       "description": "foo",
