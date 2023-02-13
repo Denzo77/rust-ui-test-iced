@@ -1,0 +1,88 @@
+use iced::{Application, Command, Element, Length, widget::{container, text, column}};
+
+
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct TextStyle {
+    size: u16,
+}
+
+struct TextStyles {
+    heading: TextStyle,
+    normal: TextStyle,
+    // normal_empty:  TextStyle,
+    // normal_icon: TextStyle,
+}
+
+const TEXT_STYLES: TextStyles = TextStyles {
+    heading: TextStyle { size: 30 },
+    normal: TextStyle { size: 20 },
+    // normal_empty: TextStyle { size: 20, colour: [0.7; 3] },
+    // normal_icon: TextStyle { size: 20, colour: [0.0; 3] },
+};
+
+
+pub struct NestedList {
+    entries: Vec<Entry>,
+}
+
+impl Application for NestedList {
+    type Message = Message;
+    type Executor = iced::executor::Default;
+    type Theme = iced::Theme;
+    type Flags = ();
+
+    fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        let list = Self {
+            entries: vec![ Entry::new("entry 1"), Entry::new("entry 2"), Entry::new("entry 3") ],
+        };
+
+        (list, Command::none())
+    }
+
+    fn title(&self) -> String {
+        "Nested List".into()
+    }
+
+    fn update(&mut self, _message: Self::Message) -> iced::Command<Self::Message> {
+        Command::none()
+    }
+
+    fn view(&self) -> iced::Element<'_, Self::Message, iced::Renderer<Self::Theme>> {
+        let entries: Element<_> = if self.entries.is_empty() {
+            let content = text("No Entries").width(Length::Fill);
+            container(content).into()
+        } else {
+            column(self.entries.iter()
+                    .map(|entry|
+                        entry.view())
+                    .collect())
+                .into()
+        };
+
+        entries
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Message {
+    Expand,
+    Collapse,
+}
+
+#[derive(Debug, Default)]
+struct Entry {
+    text: String,
+}
+
+impl Entry {
+    fn new(text: &str) -> Self {
+        Self {
+            text: text.into()
+        }
+    }
+
+    fn view(&self) -> Element<Message> {
+        text(&self.text).into()
+    }
+}
