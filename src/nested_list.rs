@@ -1,4 +1,6 @@
-use iced::{Application, Command, Element, Length, widget::{container, text, column, row, Space}};
+use iced::{Command, Element, Length, widget::{container, text, column, row, Space}};
+use iced_aw::TabLabel;
+use crate::{Icon, Tab};
 
 const INDENT_SIZE: u16 = 10;
 
@@ -6,13 +8,8 @@ pub struct NestedList {
     entries: Vec<Entry>,
 }
 
-impl Application for NestedList {
-    type Message = Message;
-    type Executor = iced::executor::Default;
-    type Theme = iced::Theme;
-    type Flags = ();
-
-    fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+impl NestedList {
+    pub fn new() -> Self {
         let list = Self {
             entries: vec![
                 Entry::new("entry 1"),
@@ -24,18 +21,26 @@ impl Application for NestedList {
             ],
         };
 
-        (list, Command::none())
+        list
     }
+
+    pub fn update(&mut self, _message: Message) -> iced::Command<Message> {
+        Command::none()
+    }
+}
+
+impl Tab for NestedList {
+    type Message = Message;
 
     fn title(&self) -> String {
         "Nested List".into()
     }
 
-    fn update(&mut self, _message: Self::Message) -> iced::Command<Self::Message> {
-        Command::none()
+    fn tab_label(&self) -> iced_aw::TabLabel {
+        TabLabel::Text(self.title())
     }
 
-    fn view(&self) -> iced::Element<'_, Self::Message, iced::Renderer<Self::Theme>> {
+    fn content(&self) -> iced::Element<'_, Self::Message> {
         let entries: Element<_> = if self.entries.is_empty() {
             let content = text("No Entries").width(Length::Fill);
             container(content).into()

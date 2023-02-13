@@ -1,22 +1,36 @@
 use iced::Length;
 use iced::event;
+use iced::widget::Space;
 use iced_native::Padding;
 use iced_native::Element;
 use iced_native::layout;
 use iced_native::overlay;
 use iced_native::widget::Tree;
+use iced::widget::column;
+use iced::widget::row;
+use iced::widget::text;
 
-pub struct WidgetTree<'a, Message, Renderer> {
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Message {
+    Expand(u32),
+    Collapse(u32),
+    Select(u32)
+}
+
+pub struct TreeView<'a, Message, Renderer> {
     spacing: u16,
     padding: Padding,
     width: Length,
     height: Length,
     max_width: u32,
     indentation: u16,
-    children: Vec<Element<'a, Message, Renderer>>,
+    children: Vec<String>,
+    _phantom_message: std::marker::PhantomData<Message>,
+    _phantom_renderer: std::marker::PhantomData<Renderer>,
 }
 
-impl<'a, Message, Renderer> WidgetTree<'a, Message, Renderer> {
+impl<'a, Message, Renderer> TreeView<'a, Message, Renderer> {
     /// Creates an empty [`Column`].
     pub fn new() -> Self {
         Self::with_children(Vec::new())
@@ -31,6 +45,8 @@ impl<'a, Message, Renderer> WidgetTree<'a, Message, Renderer> {
             max_width: u32::MAX,
             indentation: 10,
             children,
+            _phantom_message: std::marker::PhantomData::new(),
+            _phantom_renderer: std::marker::PhantomData::new(),
         }
     }
 
@@ -84,7 +100,7 @@ impl<'a, Message, Renderer> WidgetTree<'a, Message, Renderer> {
     }
 }
 
-impl<'a, Message, Renderer> Default for WidgetTree<'a, Message, Renderer> {
+impl<'a, Message, Renderer> Default for TreeView<'a, Message, Renderer> {
     fn default() -> Self {
         Self::new()
     }
@@ -92,7 +108,7 @@ impl<'a, Message, Renderer> Default for WidgetTree<'a, Message, Renderer> {
 
 
 impl<'a, Message, Renderer> iced_native::Widget<Message, Renderer>
-    for WidgetTree<'a, Message, Renderer>
+    for TreeView<'a, Message, Renderer>
 where
     Renderer: iced_native::renderer::Renderer,
 {
@@ -249,13 +265,53 @@ where
     }
 }
 
-impl<'a, Message, Renderer> From<WidgetTree<'a, Message, Renderer>>
+impl<'a, Message, Renderer> From<TreeView<'a, Message, Renderer>>
     for Element<'a, Message, Renderer>
 where
     Message: 'a,
     Renderer: iced_native::renderer::Renderer + 'a,
 {
-    fn from(column: WidgetTree<'a, Message, Renderer>) -> Self {
+    fn from(column: TreeView<'a, Message, Renderer>) -> Self {
         Self::new(column)
     }
 }
+
+// const INDENT_SIZE: u16 = 10;
+
+// #[derive(Debug, Default, Clone)]
+// struct Node {
+//     text: String,
+//     children: Vec<Node>
+// }
+
+// impl Node {
+//     fn new(text: &str) -> Self {
+//         Self {
+//             text: text.into(),
+//             children: Vec::new(),
+//         }
+//     }
+
+//     fn with_children(text: &str, children: &[Node]) -> Self {
+//         Self {
+//             text: text.into(),
+//             children: children.into(),
+//         }
+//     }
+
+//     fn view(&self) -> Element<Message> {
+//         let entry = if self.children.is_empty() {
+//             column!(text(&self.text))
+//         } else {
+//             column!(
+//                 text(&self.text),
+//                 row!(
+//                     Space::with_width(Length::Units(INDENT_SIZE)),
+//                     column(self.children.iter().map(|c| c.view()).collect())
+//                 )
+//             )
+//         };
+        
+//         entry.into()
+//     }
+// }

@@ -3,7 +3,7 @@ use iced::{
     Alignment, Element, Length, Sandbox,
 };
 
-use crate::trees::widget_tree::WidgetTree;
+use crate::trees::widget_tree::TreeView;
 
 
 #[derive(Default)]
@@ -50,7 +50,7 @@ impl Sandbox for SelectionTree {
     }
 
     fn view(&self) -> Element<Message> {
-        let selection_list = WidgetTree::with_children(
+        let selection_list = TreeView::with_children(
             self.vec.iter().map(|v| text(v).into()).collect()
             // Message::LanguageSelected,
         )
