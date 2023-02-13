@@ -1,6 +1,6 @@
-use iced::{Application, Command, Element, Length, widget::{container, text, column}};
+use iced::{Application, Command, Element, Length, widget::{container, text, column, row, Space}};
 
-
+const INDENT_SIZE: u16 = 10;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct TextStyle {
@@ -34,7 +34,14 @@ impl Application for NestedList {
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         let list = Self {
-            entries: vec![ Entry::new("entry 1"), Entry::new("entry 2"), Entry::new("entry 3") ],
+            entries: vec![
+                Entry::new("entry 1"),
+                Entry::with_children("entry 2", &vec![
+                    Entry::new("2.1"),
+                    Entry::with_children("2.2", &vec![Entry::new("2.2.1")])
+                ]),
+                Entry::new("entry 3")
+            ],
         };
 
         (list, Command::none())
@@ -70,19 +77,40 @@ pub enum Message {
     Collapse,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct Entry {
     text: String,
+    children: Vec<Entry>
 }
 
 impl Entry {
     fn new(text: &str) -> Self {
         Self {
-            text: text.into()
+            text: text.into(),
+            children: Vec::new(),
+        }
+    }
+
+    fn with_children(text: &str, children: &[Entry]) -> Self {
+        Self {
+            text: text.into(),
+            children: children.into(),
         }
     }
 
     fn view(&self) -> Element<Message> {
-        text(&self.text).into()
+        let entry = if self.children.is_empty() {
+            column!(text(&self.text))
+        } else {
+            column!(
+                text(&self.text),
+                row!(
+                    Space::with_width(Length::Units(INDENT_SIZE)),
+                    column(self.children.iter().map(|c| c.view()).collect())
+                )
+            )
+        };
+        
+        entry.into()
     }
 }
