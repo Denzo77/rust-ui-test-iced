@@ -1,8 +1,10 @@
 use iced::{
-    widget::{Column, Container, Space, Text},
+    widget::{Column, Container, Space, text},
     Alignment, Element, Length, Sandbox,
 };
-use iced_aw::selection_list::{SelectionList, SelectionListStyles};
+
+use crate::trees::widget_tree::WidgetTree;
+
 
 #[derive(Default)]
 pub struct SelectionTree {
@@ -48,12 +50,9 @@ impl Sandbox for SelectionTree {
     }
 
     fn view(&self) -> Element<Message> {
-        let selection_list = SelectionList::new_with(
-            &self.vec[..],
-            Message::LanguageSelected,
-            20,
-            5,
-            SelectionListStyles::Default,
+        let selection_list = WidgetTree::with_children(
+            self.vec.iter().map(|v| text(v).into()).collect()
+            // Message::LanguageSelected,
         )
         .width(Length::Fill)
         .height(Length::Units(500));
@@ -63,8 +62,8 @@ impl Sandbox for SelectionTree {
             .align_items(Alignment::Center)
             .spacing(10)
             .push(selection_list)
-            .push(Text::new("Which is your favorite language?"))
-            .push(Text::new(format!("{:?}", self.selected_language)));
+            .push(text("Which is your favorite language?"))
+            .push(text(format!("{:?}", self.selected_language)));
 
         content = content.push(Space::with_height(Length::Units(600)));
 
