@@ -1,4 +1,4 @@
-use iced::{Settings, Sandbox, Element, widget::{Column, Text, Container}, Length, alignment::{Horizontal, Vertical}};
+use iced::{Settings, Sandbox, Element, widget::{Column, Text, Container}, Length, alignment::{Horizontal, Vertical}, Theme};
 use iced_aw::{TabBarPosition, Tabs, TabLabel};
 
 mod grid;
@@ -10,6 +10,7 @@ mod nested_list;
 // mod trees;
 
 use nested_list::NestedList;
+use tile_pane::TilePane;
 
 fn main() -> iced::Result {
     // tile_pane::TilePaneDemo::run(Settings::default())
@@ -24,13 +25,13 @@ fn main() -> iced::Result {
 #[derive(Clone, Debug)]
 enum Message {
     TabSelected(usize), // TODO: Make enum
-    // TilePane(TilePaneMessage),
+    TilePane(tile_pane::Message),
     NestedList,
 }
 
 struct Example {
     active_tab: usize,
-    // tile_tab: TilePane,
+    tile_tab: TilePane,
     list_tab: NestedList,
 }
 
@@ -40,7 +41,7 @@ impl Sandbox for Example {
     fn new() -> Self {
         Self {
             active_tab: 0,
-            // tile_tab: TilePane::new(),
+            tile_tab: TilePane::new(),
             list_tab: NestedList::new(),
         }
     }
@@ -52,17 +53,21 @@ impl Sandbox for Example {
     fn update(&mut self, message: Self::Message) {
         match message {
             Self::Message::TabSelected(selected) => self.active_tab = selected,
-            // Self::Message::TilePane(message) => self.tile_tab.update(message),
-            Self::Message::NestedList => (),
+            Self::Message::TilePane(message) => { self.tile_tab.update(message); },
+            Self::Message::NestedList => { self.list_tab.update(nested_list::Message::Expand); },
         }
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {        
         Tabs::new(self.active_tab, Message::TabSelected)
-            // .push(self.tile_tab.tab_label(), self.tile_tab.view())
+            .push(self.tile_tab.tab_label(), self.tile_tab.view().map(|msg| Self::Message::TilePane(msg)))
             .push(self.list_tab.tab_label(), self.list_tab.view().map(|_| Self::Message::NestedList))
             .tab_bar_position(TabBarPosition::Top)
             .into()
+    }
+
+    fn theme(&self) -> iced::Theme {
+        Theme::Dark
     }
 }
 
