@@ -2,26 +2,6 @@ use iced::{Application, Command, Element, Length, widget::{container, text, colu
 
 const INDENT_SIZE: u16 = 10;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-struct TextStyle {
-    size: u16,
-}
-
-struct TextStyles {
-    heading: TextStyle,
-    normal: TextStyle,
-    // normal_empty:  TextStyle,
-    // normal_icon: TextStyle,
-}
-
-const TEXT_STYLES: TextStyles = TextStyles {
-    heading: TextStyle { size: 30 },
-    normal: TextStyle { size: 20 },
-    // normal_empty: TextStyle { size: 20, colour: [0.7; 3] },
-    // normal_icon: TextStyle { size: 20, colour: [0.0; 3] },
-};
-
-
 pub struct NestedList {
     entries: Vec<Entry>,
 }
