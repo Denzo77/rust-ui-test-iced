@@ -1,4 +1,4 @@
-use iced::{Settings, Sandbox, Element, widget::{Column, Text, Container}, Length, alignment::{Horizontal, Vertical}, Theme};
+use iced::{Settings, Sandbox, Element, widget::{Column, Text, Container}, Length, alignment::{Horizontal, Vertical}, Theme, Application, Command};
 use iced_aw::{TabBarPosition, Tabs, TabLabel};
 
 mod grid;
@@ -35,26 +35,35 @@ struct Example {
     list_tab: NestedList,
 }
 
-impl Sandbox for Example {
+impl Application for Example {
     type Message = Message;
+    type Executor = iced::executor::Default;
+    type Theme = iced::theme::Theme;
+    type Flags = ();
 
-    fn new() -> Self {
-        Self {
-            active_tab: 0,
-            tile_tab: TilePane::new(),
-            list_tab: NestedList::new(),
-        }
+    fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+        (
+            Self {
+                active_tab: 0,
+                tile_tab: TilePane::new(),
+                list_tab: NestedList::new(),
+            },
+            Command::none()
+        )
     }
 
     fn title(&self) -> String {
         "Example".into()
     }
 
-    fn update(&mut self, message: Self::Message) {
+    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
-            Self::Message::TabSelected(selected) => self.active_tab = selected,
-            Self::Message::TilePane(message) => { self.tile_tab.update(message); },
-            Self::Message::NestedList => { self.list_tab.update(nested_list::Message::Expand); },
+            Self::Message::TabSelected(selected) => {
+                self.active_tab = selected;
+                Command::none()
+            },
+            Self::Message::TilePane(message) => { self.tile_tab.update(message).map(|msg| Self::Message::TilePane(msg)) },
+            Self::Message::NestedList => { self.list_tab.update(nested_list::Message::Expand).map(|_msg| Self::Message::NestedList) },
         }
     }
 
