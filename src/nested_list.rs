@@ -45,7 +45,7 @@ impl Tab for NestedListTab {
             container(content).into()
         } else {
             let flat_entry = |entry: FlatEntry| {
-                if entry.state == ShowChildren::NoChildren {
+                if entry.has_children {
                     row!(
                         Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
                         text(entry.description.clone()),
@@ -81,7 +81,6 @@ pub enum Message {
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShowChildren {
-    NoChildren,
     #[default]
     Show,
     Hide,
@@ -117,20 +116,15 @@ impl Entry {
         }
     }
 
-    fn to_flat_view(&self, depth: u16) -> Vec<FlatEntry> {
-        let state = if self.children.is_empty() {
-            ShowChildren::NoChildren
-        } else {
-            self.state
-        };
+    fn to_flat_view(&self, visible: bool, depth: u16) -> Vec<FlatEntry> {
+        let has_children = !self.children.is_empty();
+        let children_visible = visible && (self.state != ShowChildren::Hide);
 
-        let this = FlatEntry::new(depth, state, &self.text);
+        let this = FlatEntry::new(depth, visible, has_children, &self.text);
 
         // TODO: is there a way of doing this lazily?
         self.children.iter().fold(vec![this], |mut acc, entry| {
-                if self.state == ShowChildren::Show {
-                    acc.extend(entry.to_flat_view(depth + 1));
-                }
+                acc.extend(entry.to_flat_view(children_visible, depth + 1));
 
                 acc
             })
@@ -153,7 +147,7 @@ impl NestedList {
 
     fn to_vec(&self) -> Vec<FlatEntry> {
         self.children.iter()
-            .flat_map(|entry| { entry.to_flat_view(0) })
+            .flat_map(|entry| { entry.to_flat_view(true, 0) })
             .collect()
     }
 }
@@ -161,13 +155,14 @@ impl NestedList {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 struct FlatEntry {
     depth: u16,
-    state: ShowChildren,
+    visible: bool,
+    has_children: bool,
     description: String,
 }
 
 impl FlatEntry {
-    fn new(depth: u16, state: ShowChildren, description: &str) -> Self {
-        Self { depth, state, description: description.into() }
+    fn new(depth: u16, visible: bool, has_children: bool, description: &str) -> Self {
+        Self { depth, visible, has_children, description: description.into() }
     }
 }
 
@@ -186,13 +181,13 @@ mod tests {
         ]);
 
         let expected = vec![
-            FlatEntry::new(0, ShowChildren::Show, "1"),
-            FlatEntry::new(1, ShowChildren::Show, "1.1"),
-            FlatEntry::new(2, ShowChildren::NoChildren, "1.1.1"),
-            FlatEntry::new(1, ShowChildren::NoChildren, "2"),
+            FlatEntry::new(0, true, true, "1"),
+            FlatEntry::new(1, true, true, "1.1"),
+            FlatEntry::new(2, true, false, "1.1.1"),
+            FlatEntry::new(1, true, false, "2"),
         ];
         
-        let flattened = entry.to_flat_view(0);
+        let flattened = entry.to_flat_view(true, 0);
 
         assert_eq!(flattened, expected);
     }
@@ -209,12 +204,12 @@ mod tests {
         ]);
 
         let expected = vec![
-            FlatEntry::new(0, ShowChildren::NoChildren, "1"),
-            FlatEntry::new(0, ShowChildren::Show, "2"),
-            FlatEntry::new(1, ShowChildren::NoChildren, "2.1"),
-            FlatEntry::new(1, ShowChildren::Show, "2.2"),
-            FlatEntry::new(2, ShowChildren::NoChildren, "2.2.1"),
-            FlatEntry::new(0, ShowChildren::NoChildren, "3"),
+            FlatEntry::new(0, true, false, "1"),
+            FlatEntry::new(0, true, true, "2"),
+            FlatEntry::new(1, true, false, "2.1"),
+            FlatEntry::new(1, true, true, "2.2"),
+            FlatEntry::new(2, true, false, "2.2.1"),
+            FlatEntry::new(0, true, false, "3"),
         ];
         
         let flattened = nested_list.to_vec();
@@ -234,13 +229,16 @@ mod tests {
         ]);
 
         let expected = vec![
-            FlatEntry::new(0, ShowChildren::NoChildren, "1"),
-            FlatEntry::new(0, ShowChildren::Hide, "2"),
-            FlatEntry::new(0, ShowChildren::NoChildren, "3"),
+            FlatEntry::new(0, true, false, "1"),
+            FlatEntry::new(0, true, true, "2"),
+            FlatEntry::new(1, false, false, "2.1"),
+            FlatEntry::new(1, false, true, "2.2"),
+            FlatEntry::new(2, false, false, "2.2.1"),
+            FlatEntry::new(0, true, false, "3"),
         ];
         
         let flattened = nested_list.to_vec();
-
+        
         assert_eq!(flattened, expected);
     }
 }
