@@ -83,6 +83,12 @@ impl Entry {
         }
     }
 
+    fn collapse(mut self) -> Self {
+        self.state = EntryState::Collapsed;
+
+        self
+    }
+
     fn with_children(text: &str, children: &[Entry]) -> Self {
         Self {
             text: text.into(),
@@ -107,12 +113,14 @@ impl Entry {
         entry.into()
     }
 
-    fn to_vec(&self, depth: u16) -> Vec<FlatEntry> {
+    fn to_flat_view(&self, depth: u16) -> Vec<FlatEntry> {
         let this = FlatEntry::new(depth, self.state, &self.text);
 
         // TODO: is there a way of doing this lazily?
         self.children.iter().fold(vec![this], |mut acc, entry| {
-                acc.extend(entry.to_vec(depth + 1));
+                if self.state == EntryState::Expanded {
+                    acc.extend(entry.to_flat_view(depth + 1));
+                }
 
                 acc
             })
@@ -135,7 +143,7 @@ impl NestedList {
 
     fn to_vec(&self) -> Vec<FlatEntry> {
         self.children.iter()
-            .flat_map(|entry| { entry.to_vec(0) })
+            .flat_map(|entry| { entry.to_flat_view(0) })
             .collect()
     }
 }
@@ -159,7 +167,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flatten_entry_to_vec() {
+    fn flatten_entry_to_flat_view() {
         let entry = Entry::with_children("1", &vec![
             Entry::with_children("1.1", &vec![
                 Entry::new("1.1.1"),
@@ -174,13 +182,13 @@ mod tests {
             FlatEntry::new(1, EntryState::Expanded, "2"),
         ];
         
-        let flattened = entry.to_vec(0);
+        let flattened = entry.to_flat_view(0);
 
         assert_eq!(flattened, expected);
     }
 
     #[test]
-    fn flatten_nested_list_to_vec() {
+    fn flatten_nested_list_to_flat_view() {
         let nested_list = NestedList::with_children(vec![
             Entry::new("1"),
             Entry::with_children("2", &vec![
@@ -196,6 +204,28 @@ mod tests {
             FlatEntry::new(1, EntryState::Expanded, "2.1"),
             FlatEntry::new(1, EntryState::Expanded, "2.2"),
             FlatEntry::new(2, EntryState::Expanded, "2.2.1"),
+            FlatEntry::new(0, EntryState::Expanded, "3"),
+        ];
+        
+        let flattened = nested_list.to_vec();
+
+        assert_eq!(flattened, expected);
+    }
+
+    #[test]
+    fn flatten_nested_list_to_flat_view_with_collapsed_entry() {
+        let nested_list = NestedList::with_children(vec![
+            Entry::new("1"),
+            Entry::with_children("2", &vec![
+                Entry::new("2.1"),
+                Entry::with_children("2.2", &vec![Entry::new("2.2.1")])
+            ]).collapse(),
+            Entry::new("3")
+        ]);
+
+        let expected = vec![
+            FlatEntry::new(0, EntryState::Expanded, "1"),
+            FlatEntry::new(0, EntryState::Collapsed, "2"),
             FlatEntry::new(0, EntryState::Expanded, "3"),
         ];
         
