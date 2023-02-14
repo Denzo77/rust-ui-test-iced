@@ -44,7 +44,7 @@ impl Tab for NestedListTab {
             let content = text("No Entries").width(Length::Fill);
             container(content).into()
         } else {
-            let flat_entry = |entry: FlatEntry| {
+            let flat_entry = |(id, entry): (usize, FlatEntry)| {
                 if entry.has_children {
                     row!(
                         Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
@@ -62,6 +62,8 @@ impl Tab for NestedListTab {
             let flat_view = self.internal
                 .to_vec()
                 .into_iter() // Can avoid this by converting directly, or just returning iter?
+                .enumerate()
+                .filter(|(_, entry)| entry.visible)
                 .map(flat_entry)
                 .collect();
             
@@ -238,7 +240,7 @@ mod tests {
         ];
         
         let flattened = nested_list.to_vec();
-        
+
         assert_eq!(flattened, expected);
     }
 }
