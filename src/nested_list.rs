@@ -24,11 +24,16 @@ impl NestedListTab {
     }
 
     pub fn update(&mut self, message: Message) -> iced::Command<Message> {
-        println!("{message:?}");
-
         match message {
-            Message::Press { id } => todo!(),
-        }
+            Message::Press { id } => self.internal.get_mut(id).map(|entry| {
+                let new_state = match entry.state {
+                    ShowChildren::Hide => ShowChildren::Show,
+                    ShowChildren::Show => ShowChildren::Hide,
+                };
+
+                entry.state = new_state;
+            }),
+        };
 
         Command::none()
     }
