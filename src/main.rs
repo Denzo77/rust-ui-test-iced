@@ -9,7 +9,7 @@ mod nested_list;
 // mod selection_tree;
 // mod trees;
 
-use nested_list::NestedList;
+use nested_list::NestedListTab;
 use tile_pane::TilePane;
 
 fn main() -> iced::Result {
@@ -32,7 +32,7 @@ enum Message {
 struct Example {
     active_tab: usize,
     tile_tab: TilePane,
-    list_tab: NestedList,
+    list_tab: NestedListTab,
 }
 
 impl Application for Example {
@@ -46,7 +46,7 @@ impl Application for Example {
             Self {
                 active_tab: 0,
                 tile_tab: TilePane::new(),
-                list_tab: NestedList::new(),
+                list_tab: NestedListTab::new(),
             },
             Command::none()
         )
