@@ -115,13 +115,11 @@ impl Entry {
 
     fn to_flat_view(&self, depth: u16) -> Vec<FlatEntry> {
         let this = std::iter::once_with(|| FlatEntry::new(depth, self.state, &self.text));
-        let children: Vec<_> = if self.state == EntryState::Expanded {
-            self.children.iter()
-                .flat_map(|child| child.to_flat_view(depth + 1))
-                .collect()
-        } else {
-            vec![]
-        };
+        let children: Vec<_> = self.children.iter()
+                .filter(|_| self.state == EntryState::Expanded)
+                .flat_map(|child| child.to_flat_view(depth + 1)).collect();
+
+
         this.chain(children.into_iter()).collect()
 
         // // TODO: is there a way of doing this lazily?
