@@ -120,7 +120,7 @@ impl Entry {
                 .flat_map(|child| child.to_flat_view(depth + 1));
 
 
-        this.chain(children.into_iter()).collect()
+        this.chain(children).collect()
 
         // // TODO: is there a way of doing this lazily?
         // self.children.iter().fold(vec![this], |mut acc, entry| {
