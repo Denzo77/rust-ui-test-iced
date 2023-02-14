@@ -115,9 +115,9 @@ impl Entry {
 
     fn to_flat_view(&self, depth: u16) -> Vec<FlatEntry> {
         let this = std::iter::once_with(|| FlatEntry::new(depth, self.state, &self.text));
-        let children: Vec<_> = self.children.iter()
+        let children = self.children.iter()
                 .filter(|_| self.state == EntryState::Expanded)
-                .flat_map(|child| child.to_flat_view(depth + 1)).collect();
+                .flat_map(|child| child.to_flat_view(depth + 1));
 
 
         this.chain(children.into_iter()).collect()
