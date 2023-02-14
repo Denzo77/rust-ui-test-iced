@@ -33,6 +33,7 @@ impl NestedListTab {
 
                 entry.state = new_state;
             }),
+            Message::AddNewEntry { id } => todo!(),
         };
 
         Command::none()
@@ -57,12 +58,20 @@ impl Tab for NestedListTab {
             let content = text("No Entries").width(Length::Fill);
             container(content).into()
         } else {
+            // FIXME: Only show this on mouse over
+            let add_new_button = |id| button(text("+").size(10))
+                .on_press(Self::Message::AddNewEntry { id })
+                .height(Length::Fill)
+                .width(Length::Units(row_height));
+
             let flat_entry = |(id, entry): (usize, FlatEntry)| {
                 if !entry.has_children {
                     row!(
                         Space::with_width(Length::Units(INDENT_SIZE * entry.depth + row_height)),
                         text(entry.description.clone()),
-                    ).into()
+                        Space::with_width(Length::Fill),
+                        add_new_button(id),
+                    )
                 } else {
                     row!(
                         Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
@@ -72,7 +81,9 @@ impl Tab for NestedListTab {
                             .width(Length::Units(row_height)),
                         text(entry.description.clone())
                             .height(Length::Fill),
-                    ).height(Length::Units(row_height)).into()
+                        Space::with_width(Length::Fill),
+                        add_new_button(id),
+                    )
                 }
             };
 
@@ -81,7 +92,10 @@ impl Tab for NestedListTab {
                 .into_iter() // Can avoid this by converting directly, or just returning iter?
                 .enumerate()
                 .filter(|(_, entry)| entry.visible)
-                .map(flat_entry)
+                .map(|entry| flat_entry(entry)
+                    .width(Length::Units(200)) // TODO: make this fill
+                    .height(Length::Units(row_height))
+                    .into())
                 .collect();
             
             column(flat_view)
@@ -94,7 +108,8 @@ impl Tab for NestedListTab {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Message {
-    Press{ id: usize },
+    Press { id: usize },
+    AddNewEntry { id: usize },
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
