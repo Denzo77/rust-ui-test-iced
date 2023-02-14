@@ -136,6 +136,31 @@ impl Entry {
                 acc
             })
     }
+
+    fn get_mut(&mut self, id: usize) -> (usize, Option<&mut Entry>) {
+        if id == 0 {
+            return (0, Some(self));
+        }
+
+        let mut id = id - 1;
+
+        for child in self.children.iter_mut() {
+            let len = child.len();
+            let entry = child.get_mut(id);
+            id = entry.0;
+
+            if entry.1.is_some() {
+                return entry
+            }
+        }
+
+        (id, None)
+    }
+
+    fn len(&self) -> usize {
+        // +1 for entry in this node
+        self.children.len() + 1
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -156,6 +181,22 @@ impl NestedList {
         self.children.iter()
             .flat_map(|entry| { entry.to_flat_view(true, 0) })
             .collect()
+    }
+
+    fn get_mut(&mut self, id: usize) -> Option<&mut Entry> {
+        let mut id = id;
+        for child in self.children.iter_mut() {
+            let len = child.len();
+            let entry = child.get_mut(id);
+            id = entry.0;
+
+            let entry = entry.1;
+            if entry.is_some() {
+                return entry
+            }
+        }
+
+        None
     }
 }
 
@@ -247,5 +288,37 @@ mod tests {
         let flattened = nested_list.to_vec();
 
         assert_eq!(flattened, expected);
+    }
+
+    #[test]
+    fn nested_list_get_correct_entry() {
+        let mut nested_list = NestedList::with_children(vec![
+            Entry::new("1"),
+            Entry::with_children("2", &vec![
+                Entry::new("2.1"),
+                Entry::with_children("2.2", &vec![
+                    Entry::new("2.2.1")
+                ])
+            ]),
+            Entry::new("3")
+        ]);
+
+        let expected = vec![
+            Some("1".to_string()),
+            Some("2".to_string()),
+            Some("2.1".to_string()),
+            Some("2.2".to_string()),
+            Some("2.2.1".to_string()),
+            Some("3".to_string()),
+            None,
+        ];
+
+        for (id, expect) in expected.iter().enumerate() {
+            let entry = nested_list.get_mut(id);
+            let entry = entry.map(|x| x.text.clone());
+
+            assert_eq!(&entry, expect);
+        }
+
     }
 }
