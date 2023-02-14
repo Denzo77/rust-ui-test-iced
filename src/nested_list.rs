@@ -51,6 +51,8 @@ impl Tab for NestedListTab {
     }
 
     fn content(&self) -> iced::Element<'_, Self::Message> {
+        let row_height = 20;
+
         let entries: Element<_> = if self.internal.is_empty() {
             let content = text("No Entries").width(Length::Fill);
             container(content).into()
@@ -58,15 +60,19 @@ impl Tab for NestedListTab {
             let flat_entry = |(id, entry): (usize, FlatEntry)| {
                 if !entry.has_children {
                     row!(
-                        Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
+                        Space::with_width(Length::Units(INDENT_SIZE * entry.depth + row_height)),
                         text(entry.description.clone()),
                     ).into()
                 } else {
                     row!(
                         Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
-                        button(text("")).on_press(Self::Message::Press { id }), // TODO: Should this just be a checkbox?
-                        text(entry.description.clone()),
-                    ).into()
+                        button(text(""))
+                            .on_press(Self::Message::Press { id })// TODO: Should this just be a checkbox?
+                            .height(Length::Fill)
+                            .width(Length::Units(row_height)),
+                        text(entry.description.clone())
+                            .height(Length::Fill),
+                    ).height(Length::Units(row_height)).into()
                 }
             };
 
