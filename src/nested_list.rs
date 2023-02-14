@@ -1,5 +1,6 @@
 use iced::{Command, Element, Length, widget::{container, text, column, row, Space}};
 use iced_aw::TabLabel;
+use iced_native::widget::Row;
 use crate::{Icon, Tab};
 
 const INDENT_SIZE: u16 = 10;
@@ -43,10 +44,13 @@ impl Tab for NestedListTab {
             let content = text("No Entries").width(Length::Fill);
             container(content).into()
         } else {
-            column(self.internal.children.iter()
-                    .map(|entry|
-                        entry.view())
-                    .collect())
+            let flat_view = self.internal
+                .to_vec()
+                .into_iter() // Can avoid this by converting directly, or just returning iter?
+                .map(|entry| entry.view().into())
+                .collect();
+            
+            column(flat_view)
                 .into()
         };
 
@@ -158,6 +162,16 @@ struct FlatEntry {
 impl FlatEntry {
     fn new(depth: u16, state: EntryState, description: &str) -> Self {
         Self { depth, state, description: description.into() }
+    }
+
+    fn view<'a, Message: 'a, Renderer>(&self) -> Row<'a, Message, Renderer>
+        where Renderer: iced_native::text::Renderer + 'a,
+              <Renderer as iced_native::Renderer>::Theme: iced::widget::text::StyleSheet,
+    {
+        row!(
+            Space::with_width(Length::Units(INDENT_SIZE * self.depth)),
+            text(self.description.clone()),
+        )
     }
 }
 
