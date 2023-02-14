@@ -63,7 +63,7 @@ impl Application for Example {
                 Command::none()
             },
             Self::Message::TilePane(message) => { self.tile_tab.update(message).map(|msg| Self::Message::TilePane(msg)) },
-            Self::Message::NestedList => { self.list_tab.update(nested_list::Message::Expand).map(|_msg| Self::Message::NestedList) },
+            Self::Message::NestedList => { self.list_tab.update(nested_list::Message::Nothing).map(|_msg| Self::Message::NestedList) },
         }
     }
 

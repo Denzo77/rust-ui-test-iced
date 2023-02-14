@@ -1,9 +1,9 @@
-use iced::{Command, Element, Length, widget::{container, text, column, row, Space}};
+use iced::{Command, Element, Length, widget::{container, text, column, row, Space, button}};
 use iced_aw::TabLabel;
 use iced_native::widget::Row;
 use crate::{Icon, Tab};
 
-const INDENT_SIZE: u16 = 10;
+const INDENT_SIZE: u16 = 20;
 
 pub struct NestedListTab {
     internal: NestedList,
@@ -44,10 +44,25 @@ impl Tab for NestedListTab {
             let content = text("No Entries").width(Length::Fill);
             container(content).into()
         } else {
+            let flat_entry = |entry: FlatEntry| {
+                if entry.state == ShowChildren::NoChildren {
+                    row!(
+                        Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
+                        text(entry.description.clone()),
+                    ).into()
+                } else {
+                    row!(
+                        Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
+                        button(text("")).on_press(Self::Message::Press), // TODO: Should this just be a checkbox?
+                        text(entry.description.clone()),
+                    ).into()
+                }
+            };
+
             let flat_view = self.internal
                 .to_vec()
                 .into_iter() // Can avoid this by converting directly, or just returning iter?
-                .map(|entry| entry.view().into())
+                .map(flat_entry)
                 .collect();
             
             column(flat_view)
@@ -60,22 +75,23 @@ impl Tab for NestedListTab {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Message {
-    Expand,
-    Collapse,
+    Press,
+    Nothing,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EntryState {
+pub enum ShowChildren {
+    NoChildren,
     #[default]
-    Expanded,
-    Collapsed,
+    Show,
+    Hide,
 }
 
 
 #[derive(Debug, Default, Clone)]
 struct Entry {
     text: String,
-    state: EntryState,
+    state: ShowChildren,
     children: Vec<Entry>
 }
 
@@ -88,7 +104,7 @@ impl Entry {
     }
 
     fn collapse(mut self) -> Self {
-        self.state = EntryState::Collapsed;
+        self.state = ShowChildren::Hide;
 
         self
     }
@@ -101,28 +117,18 @@ impl Entry {
         }
     }
 
-    fn view(&self) -> Element<Message> {
-        let entry = if self.children.is_empty() {
-            column!(text(&self.text))
-        } else {
-            column!(
-                text(&self.text),
-                row!(
-                    Space::with_width(Length::Units(INDENT_SIZE)),
-                    column(self.children.iter().map(|c| c.view()).collect())
-                )
-            )
-        };
-        
-        entry.into()
-    }
-
     fn to_flat_view(&self, depth: u16) -> Vec<FlatEntry> {
-        let this = FlatEntry::new(depth, self.state, &self.text);
+        let state = if self.children.is_empty() {
+            ShowChildren::NoChildren
+        } else {
+            self.state
+        };
+
+        let this = FlatEntry::new(depth, state, &self.text);
 
         // TODO: is there a way of doing this lazily?
         self.children.iter().fold(vec![this], |mut acc, entry| {
-                if self.state == EntryState::Expanded {
+                if self.state == ShowChildren::Show {
                     acc.extend(entry.to_flat_view(depth + 1));
                 }
 
@@ -155,23 +161,13 @@ impl NestedList {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 struct FlatEntry {
     depth: u16,
-    state: EntryState,
+    state: ShowChildren,
     description: String,
 }
 
 impl FlatEntry {
-    fn new(depth: u16, state: EntryState, description: &str) -> Self {
+    fn new(depth: u16, state: ShowChildren, description: &str) -> Self {
         Self { depth, state, description: description.into() }
-    }
-
-    fn view<'a, Message: 'a, Renderer>(&self) -> Row<'a, Message, Renderer>
-        where Renderer: iced_native::text::Renderer + 'a,
-              <Renderer as iced_native::Renderer>::Theme: iced::widget::text::StyleSheet,
-    {
-        row!(
-            Space::with_width(Length::Units(INDENT_SIZE * self.depth)),
-            text(self.description.clone()),
-        )
     }
 }
 
@@ -190,10 +186,10 @@ mod tests {
         ]);
 
         let expected = vec![
-            FlatEntry::new(0, EntryState::Expanded, "1"),
-            FlatEntry::new(1, EntryState::Expanded, "1.1"),
-            FlatEntry::new(2, EntryState::Expanded, "1.1.1"),
-            FlatEntry::new(1, EntryState::Expanded, "2"),
+            FlatEntry::new(0, ShowChildren::Show, "1"),
+            FlatEntry::new(1, ShowChildren::Show, "1.1"),
+            FlatEntry::new(2, ShowChildren::NoChildren, "1.1.1"),
+            FlatEntry::new(1, ShowChildren::NoChildren, "2"),
         ];
         
         let flattened = entry.to_flat_view(0);
@@ -213,12 +209,12 @@ mod tests {
         ]);
 
         let expected = vec![
-            FlatEntry::new(0, EntryState::Expanded, "1"),
-            FlatEntry::new(0, EntryState::Expanded, "2"),
-            FlatEntry::new(1, EntryState::Expanded, "2.1"),
-            FlatEntry::new(1, EntryState::Expanded, "2.2"),
-            FlatEntry::new(2, EntryState::Expanded, "2.2.1"),
-            FlatEntry::new(0, EntryState::Expanded, "3"),
+            FlatEntry::new(0, ShowChildren::NoChildren, "1"),
+            FlatEntry::new(0, ShowChildren::Show, "2"),
+            FlatEntry::new(1, ShowChildren::NoChildren, "2.1"),
+            FlatEntry::new(1, ShowChildren::Show, "2.2"),
+            FlatEntry::new(2, ShowChildren::NoChildren, "2.2.1"),
+            FlatEntry::new(0, ShowChildren::NoChildren, "3"),
         ];
         
         let flattened = nested_list.to_vec();
@@ -238,9 +234,9 @@ mod tests {
         ]);
 
         let expected = vec![
-            FlatEntry::new(0, EntryState::Expanded, "1"),
-            FlatEntry::new(0, EntryState::Collapsed, "2"),
-            FlatEntry::new(0, EntryState::Expanded, "3"),
+            FlatEntry::new(0, ShowChildren::NoChildren, "1"),
+            FlatEntry::new(0, ShowChildren::Hide, "2"),
+            FlatEntry::new(0, ShowChildren::NoChildren, "3"),
         ];
         
         let flattened = nested_list.to_vec();
