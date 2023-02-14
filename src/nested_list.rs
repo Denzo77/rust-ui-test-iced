@@ -23,7 +23,13 @@ impl NestedListTab {
         Self { internal }
     }
 
-    pub fn update(&mut self, _message: Message) -> iced::Command<Message> {
+    pub fn update(&mut self, message: Message) -> iced::Command<Message> {
+        println!("{message:?}");
+
+        match message {
+            Message::Press { id } => todo!(),
+        }
+
         Command::none()
     }
 }
@@ -45,7 +51,7 @@ impl Tab for NestedListTab {
             container(content).into()
         } else {
             let flat_entry = |(id, entry): (usize, FlatEntry)| {
-                if entry.has_children {
+                if !entry.has_children {
                     row!(
                         Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
                         text(entry.description.clone()),
@@ -53,7 +59,7 @@ impl Tab for NestedListTab {
                 } else {
                     row!(
                         Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
-                        button(text("")).on_press(Self::Message::Press), // TODO: Should this just be a checkbox?
+                        button(text("")).on_press(Self::Message::Press { id }), // TODO: Should this just be a checkbox?
                         text(entry.description.clone()),
                     ).into()
                 }
@@ -77,8 +83,7 @@ impl Tab for NestedListTab {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Message {
-    Press,
-    Nothing,
+    Press{ id: usize },
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]

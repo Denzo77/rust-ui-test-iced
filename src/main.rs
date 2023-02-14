@@ -26,7 +26,7 @@ fn main() -> iced::Result {
 enum Message {
     TabSelected(usize), // TODO: Make enum
     TilePane(tile_pane::Message),
-    NestedList,
+    NestedList(nested_list::Message),
 }
 
 struct Example {
@@ -63,14 +63,14 @@ impl Application for Example {
                 Command::none()
             },
             Self::Message::TilePane(message) => { self.tile_tab.update(message).map(|msg| Self::Message::TilePane(msg)) },
-            Self::Message::NestedList => { self.list_tab.update(nested_list::Message::Nothing).map(|_msg| Self::Message::NestedList) },
+            Self::Message::NestedList(message) => { self.list_tab.update(message).map(|msg| Self::Message::NestedList(msg)) },
         }
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {        
         Tabs::new(self.active_tab, Message::TabSelected)
             .push(self.tile_tab.tab_label(), self.tile_tab.view().map(|msg| Self::Message::TilePane(msg)))
-            .push(self.list_tab.tab_label(), self.list_tab.view().map(|_| Self::Message::NestedList))
+            .push(self.list_tab.tab_label(), self.list_tab.view().map(|msg| Self::Message::NestedList(msg)))
             .tab_bar_position(TabBarPosition::Top)
             .into()
     }
