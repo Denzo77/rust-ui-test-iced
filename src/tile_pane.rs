@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use once_cell::sync::Lazy;
 
-use iced::{widget::{scrollable::RelativeOffset, image, slider, button, column, container}, Length, Element, Alignment, Application, executor, Theme, Command};
+use iced::{widget::{scrollable::RelativeOffset, image, slider, button, column, container, text}, Length, Element, Alignment, Application, executor, Theme, Command};
 use iced::widget::scrollable;
 
 use crate::{Icon, Tab};
@@ -15,7 +15,16 @@ pub struct TilePane {
 impl TilePane {
     pub fn new() -> Self {
         let images = ["resources/still_1.jpeg", "resources/still_2.png", "resources/still_3.webp"];
-        let images = images.iter().enumerate().map(|(i, &p)| ImageTile::load(i as u32, p)).collect();
+        let images: Vec<_> = images.iter().enumerate()
+            .map(|(i, &p)| ImageTile::new(i as u32, p))
+            .map(|mut img| {img.load(); img})
+            .collect();
+
+        // let images = std::fs::read_dir(THUMBS_PATH).unwrap()
+        //     .filter_map(|res| res.ok())
+        //     .map(|e| e.path());
+        // let images = images.enumerate().map(|(i, p)| ImageTile::new(i as u32, p.to_str().unwrap())).collect();
+
 
         Self {
             tile_pane: ImageTiles::from_images(images)
@@ -139,23 +148,34 @@ impl ImageTiles {
 pub struct ImageTile {
     uid: u32,
     path: PathBuf,
-    handle: image::Handle,
+    handle: Option<image::Handle>,
 }
 
 impl ImageTile {
-    pub fn load(uid: u32, path: &str) -> Self {
+    pub fn new(uid: u32, path: &str) -> Self {
         Self {
             uid,
             path: path.into(),
-            handle: image::Handle::from_path(path),
+            handle: None,
         }
     }
 
+    pub fn load(&mut self) {
+        self.handle = Some(image::Handle::from_path(self.path.clone()))
+    }
+
     pub fn view(&self, size: Length) -> Element<Message> {
-        image::Image::new(self.handle.clone())
-            .width(size)
-            .height(size)
-            .into()
+        if let Some(handle) = &self.handle {
+            image::Image::new(handle.clone())
+                .width(size)
+                .height(size)
+                .into()
+        } else {
+            text("placeholder")
+                .width(size)
+                .height(size)
+                .into()
+        }
     }
 }
 

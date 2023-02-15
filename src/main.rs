@@ -1,4 +1,4 @@
-use iced::{Settings, Sandbox, Element, widget::{Column, Text, Container}, Length, alignment::{Horizontal, Vertical}, Theme, Application, Command};
+use iced::{Settings, Element, widget::{Column, Text, Container}, Length, alignment::{Horizontal, Vertical}, Theme, Application, Command};
 use iced_aw::{TabBarPosition, Tabs, TabLabel};
 
 mod grid;
@@ -8,7 +8,9 @@ mod checklist;
 mod nested_list;
 // mod selection_tree;
 // mod trees;
+mod lazy_scroll;
 
+use lazy_scroll::LazyScroll;
 use nested_list::NestedListTab;
 use tile_pane::TilePane;
 
@@ -27,12 +29,14 @@ enum Message {
     TabSelected(usize), // TODO: Make enum
     TilePane(tile_pane::Message),
     NestedList(nested_list::Message),
+    LazyScroll(lazy_scroll::Message)
 }
 
 struct Example {
     active_tab: usize,
     tile_tab: TilePane,
     list_tab: NestedListTab,
+    lazy_scroll: LazyScroll,
 }
 
 impl Application for Example {
@@ -47,6 +51,7 @@ impl Application for Example {
                 active_tab: 0,
                 tile_tab: TilePane::new(),
                 list_tab: NestedListTab::new(),
+                lazy_scroll: LazyScroll {  }
             },
             Command::none()
         )
@@ -64,6 +69,7 @@ impl Application for Example {
             },
             Self::Message::TilePane(message) => { self.tile_tab.update(message).map(|msg| Self::Message::TilePane(msg)) },
             Self::Message::NestedList(message) => { self.list_tab.update(message).map(|msg| Self::Message::NestedList(msg)) },
+            Self::Message::LazyScroll(_) => todo!(),
         }
     }
 
