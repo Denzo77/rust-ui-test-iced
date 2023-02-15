@@ -1,5 +1,61 @@
+use iced::{widget::{scrollable, container, text}, Command, Length, Element};
+use iced_native::widget::column;
+
+use crate::Tab;
+
+const DEFAULT_TILE_SIZE: u16 = 128;
+
 #[derive(Debug, Clone, Copy)]
-pub enum Message {}
+pub enum Message {
+    Scrolled(scrollable::RelativeOffset),
+}
 
-pub struct LazyScroll {}
+pub struct LazyScroll {
+    elements: Vec<String>,
+    current_offset: scrollable::RelativeOffset,
+}
 
+impl LazyScroll {
+    pub fn new() -> Self {
+        Self {
+            elements: (0..100).map(|i| format!("Placeholder-{i}")).collect(),
+            current_offset: scrollable::RelativeOffset::START
+        }
+    }
+
+    pub fn update(&mut self, message: Message) -> Command<Message> {
+        match message {
+            Message::Scrolled(offset) => { self.current_offset = offset; Command::none()},
+        }
+    }
+}
+
+impl Tab for LazyScroll {
+    type Message = Message;
+
+    fn title(&self) -> String {
+        "Lazy Scroll".into()
+    }
+
+    fn tab_label(&self) -> iced_aw::TabLabel {
+        iced_aw::TabLabel::Text(self.title())
+    }
+
+    fn content(&self) -> Element<'_, Self::Message> {
+        let content = scrollable(
+                column(
+                    self.elements.iter().map(|s| text(s).into()).collect()
+                )
+                .width(Length::Fill) //.height(Length::Fill)
+            )
+            .vertical_scroll(scrollable::Properties::new())
+            .on_scroll(Message::Scrolled);
+    
+        container(content)
+            .width(Length::Fill).height(Length::Fill)
+            .padding(40)
+            .center_x()
+            .center_y()
+            .into()
+    }
+}

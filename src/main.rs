@@ -51,7 +51,7 @@ impl Application for Example {
                 active_tab: 0,
                 tile_tab: TilePane::new(),
                 list_tab: NestedListTab::new(),
-                lazy_scroll: LazyScroll {  }
+                lazy_scroll: LazyScroll::new(),
             },
             Command::none()
         )
@@ -69,7 +69,7 @@ impl Application for Example {
             },
             Self::Message::TilePane(message) => { self.tile_tab.update(message).map(|msg| Self::Message::TilePane(msg)) },
             Self::Message::NestedList(message) => { self.list_tab.update(message).map(|msg| Self::Message::NestedList(msg)) },
-            Self::Message::LazyScroll(_) => todo!(),
+            Self::Message::LazyScroll(message) => { self.lazy_scroll.update(message).map(|msg| Self::Message::LazyScroll(msg)) },
         }
     }
 
@@ -77,6 +77,7 @@ impl Application for Example {
         Tabs::new(self.active_tab, Message::TabSelected)
             .push(self.tile_tab.tab_label(), self.tile_tab.view().map(|msg| Self::Message::TilePane(msg)))
             .push(self.list_tab.tab_label(), self.list_tab.view().map(|msg| Self::Message::NestedList(msg)))
+            .push(self.lazy_scroll.tab_label(), self.lazy_scroll.view().map(|msg| Self::Message::LazyScroll(msg)))
             .tab_bar_position(TabBarPosition::Top)
             .into()
     }

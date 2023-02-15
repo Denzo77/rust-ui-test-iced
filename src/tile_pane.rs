@@ -43,7 +43,7 @@ impl Tab for TilePane {
     type Message = Message;
 
     fn title(&self) -> String {
-        "Counter - Iced".into()
+        "Tile Pane".into()
     }
 
     fn tab_label(&self) -> iced_aw::TabLabel {
