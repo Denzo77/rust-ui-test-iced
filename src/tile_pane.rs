@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 use once_cell::sync::Lazy;
 
-use iced::{widget::{scrollable::RelativeOffset, image, slider, button, column, container, text}, Length, Element, Alignment, Application, executor, Theme, Command};
+use iced::{widget::{scrollable::RelativeOffset, image, slider, button, column, container, text}, Length, Element, Alignment, Command};
 use iced::widget::scrollable;
 
-use crate::{Icon, Tab};
+use crate::Tab;
 
 use crate::grid::Grid;
 
@@ -87,7 +87,7 @@ pub struct ImageTiles {
 }
 
 impl ImageTiles {
-    pub fn new() -> Self {
+    pub fn _new() -> Self {
         Self::from_images(Vec::new())
     }
 
@@ -146,7 +146,7 @@ impl ImageTiles {
 
 
 pub struct ImageTile {
-    uid: u32,
+    _uid: u32,
     path: PathBuf,
     handle: Option<image::Handle>,
 }
@@ -154,7 +154,7 @@ pub struct ImageTile {
 impl ImageTile {
     pub fn new(uid: u32, path: &str) -> Self {
         Self {
-            uid,
+            _uid: uid,
             path: path.into(),
             handle: None,
         }

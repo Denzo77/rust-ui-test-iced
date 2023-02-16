@@ -1,7 +1,6 @@
 use iced::{Command, Element, Length, widget::{container, text, column, row, Space, button}};
 use iced_aw::TabLabel;
-use iced_native::widget::Row;
-use crate::{Icon, Tab};
+use crate::Tab;
 
 const INDENT_SIZE: u16 = 20;
 
@@ -13,9 +12,9 @@ impl NestedListTab {
     pub fn new() -> Self {
         let internal = NestedList::with_children(vec![
             Entry::new("entry 1"),
-            Entry::with_children("entry 2", &vec![
+            Entry::with_children("entry 2", &[
                 Entry::new("2.1"),
-                Entry::with_children("2.2", &vec![Entry::new("2.2.1")])
+                Entry::with_children("2.2", &[Entry::new("2.2.1")])
             ]),
             Entry::new("entry 3")
         ]);
@@ -33,7 +32,7 @@ impl NestedListTab {
 
                 entry.state = new_state;
             }),
-            Message::AddNewEntry { id } => todo!(),
+            Message::AddNewEntry { .. } => todo!(),
         };
 
         Command::none()
@@ -68,7 +67,7 @@ impl Tab for NestedListTab {
                 if !entry.has_children {
                     row!(
                         Space::with_width(Length::Units(INDENT_SIZE * entry.depth + row_height)),
-                        text(entry.description.clone()),
+                        text(entry.description),
                         Space::with_width(Length::Fill),
                         add_new_button(id),
                     )
@@ -79,7 +78,7 @@ impl Tab for NestedListTab {
                             .on_press(Self::Message::Press { id })// TODO: Should this just be a checkbox?
                             .height(Length::Fill)
                             .width(Length::Units(row_height)),
-                        text(entry.description.clone())
+                        text(entry.description)
                             .height(Length::Fill),
                         Space::with_width(Length::Fill),
                         add_new_button(id),
@@ -135,7 +134,7 @@ impl Entry {
         }
     }
 
-    fn collapse(mut self) -> Self {
+    fn _collapse(mut self) -> Self {
         self.state = ShowChildren::Hide;
 
         self
@@ -171,7 +170,6 @@ impl Entry {
         let mut id = id - 1;
 
         for child in self.children.iter_mut() {
-            let len = child.len();
             let entry = child.get_mut(id);
             id = entry.0;
 
@@ -183,7 +181,7 @@ impl Entry {
         (id, None)
     }
 
-    fn len(&self) -> usize {
+    fn _len(&self) -> usize {
         // +1 for entry in this node
         self.children.len() + 1
     }
@@ -212,7 +210,6 @@ impl NestedList {
     fn get_mut(&mut self, id: usize) -> Option<&mut Entry> {
         let mut id = id;
         for child in self.children.iter_mut() {
-            let len = child.len();
             let entry = child.get_mut(id);
             id = entry.0;
 
@@ -298,7 +295,7 @@ mod tests {
             Entry::with_children("2", &vec![
                 Entry::new("2.1"),
                 Entry::with_children("2.2", &vec![Entry::new("2.2.1")])
-            ]).collapse(),
+            ])._collapse(),
             Entry::new("3")
         ]);
 

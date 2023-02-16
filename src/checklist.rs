@@ -64,7 +64,7 @@ impl Application for Checklist {
                 }
                 Command::none()
             },
-            Self::Message::EntryMessage { id, message } => update_entry(&mut self.entries, id, message),
+            Self::Message::Entry { id, message } => update_entry(&mut self.entries, id, message),
             // Self::Message => ,
         }
     }
@@ -88,7 +88,7 @@ impl Application for Checklist {
             column(self.entries.iter()
                     .enumerate()
                     .map(|(id, entry)|
-                        entry.view(id).map(move |message| Self::Message::EntryMessage { id, message }))
+                        entry.view(id).map(move |message| Self::Message::Entry { id, message }))
                     .collect())
                 .spacing(10)
                 .into()
@@ -110,7 +110,7 @@ impl Application for Checklist {
 pub enum Message {
     InputChanged(String),
     CreateEntry,
-    EntryMessage { id: usize, message: EntryMessage }
+    Entry { id: usize, message: EntryMessage }
 }
 
 #[derive(Default, Debug, Clone)]

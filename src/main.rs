@@ -67,17 +67,17 @@ impl Application for Example {
                 self.active_tab = selected;
                 Command::none()
             },
-            Self::Message::TilePane(message) => { self.tile_tab.update(message).map(|msg| Self::Message::TilePane(msg)) },
-            Self::Message::NestedList(message) => { self.list_tab.update(message).map(|msg| Self::Message::NestedList(msg)) },
-            Self::Message::LazyScroll(message) => { self.lazy_scroll.update(message).map(|msg| Self::Message::LazyScroll(msg)) },
+            Self::Message::TilePane(message) => { self.tile_tab.update(message).map(Self::Message::TilePane) },
+            Self::Message::NestedList(message) => { self.list_tab.update(message).map(Self::Message::NestedList) },
+            Self::Message::LazyScroll(message) => { self.lazy_scroll.update(message).map(Self::Message::LazyScroll) },
         }
     }
 
     fn view(&self) -> iced::Element<'_, Self::Message> {        
         Tabs::new(self.active_tab, Message::TabSelected)
-            .push(self.tile_tab.tab_label(), self.tile_tab.view().map(|msg| Self::Message::TilePane(msg)))
-            .push(self.list_tab.tab_label(), self.list_tab.view().map(|msg| Self::Message::NestedList(msg)))
-            .push(self.lazy_scroll.tab_label(), self.lazy_scroll.view().map(|msg| Self::Message::LazyScroll(msg)))
+            .push(self.tile_tab.tab_label(), self.tile_tab.view().map(Self::Message::TilePane))
+            .push(self.list_tab.tab_label(), self.list_tab.view().map(Self::Message::NestedList))
+            .push(self.lazy_scroll.tab_label(), self.lazy_scroll.view().map(Self::Message::LazyScroll))
             .tab_bar_position(TabBarPosition::Top)
             .into()
     }
@@ -89,8 +89,8 @@ impl Application for Example {
 
 
 enum Icon {
-    Tile,
-    List,
+    _Tile,
+    _List,
     // Calc,
     // CogAlt,
 }
@@ -98,8 +98,8 @@ enum Icon {
 impl From<Icon> for char {
     fn from(icon: Icon) -> Self {
         match icon {
-            Icon::Tile => '\u{E800}',
-            Icon::List => '\u{E801}',
+            Icon::_Tile => '\u{E800}',
+            Icon::_List => '\u{E801}',
             // Icon::Calc => '\u{F1EC}',
             // Icon::CogAlt => '\u{E802}',
         }
