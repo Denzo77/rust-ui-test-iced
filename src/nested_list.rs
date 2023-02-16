@@ -1,3 +1,5 @@
+use core::panic;
+
 use iced::{Command, Element, Length, widget::{container, text, column, row, Space, button}};
 use iced_aw::TabLabel;
 use crate::Tab;
@@ -28,11 +30,14 @@ impl NestedListTab {
                 let new_state = match entry.state {
                     ShowChildren::Hide => ShowChildren::Show,
                     ShowChildren::Show => ShowChildren::Hide,
+                    ShowChildren::Editing => unreachable!(),
                 };
 
                 entry.state = new_state;
             }),
-            Message::AddNewEntry { .. } => todo!(),
+            Message::AddNewEntry { id } => self.internal.get_mut(id).map(|entry| {
+                entry.children.push(Entry::new_empty());
+            }),
         };
 
         Command::none()
@@ -104,6 +109,7 @@ pub enum ShowChildren {
     #[default]
     Show,
     Hide,
+    Editing,
 }
 
 
@@ -118,6 +124,14 @@ impl Entry {
     fn new(text: &str) -> Self {
         Self {
             text: text.into(),
+            ..Default::default()
+        }
+    }
+
+    fn new_empty() -> Self {
+        Self {
+            text: String::new(),
+            state: ShowChildren::Editing,
             ..Default::default()
         }
     }
