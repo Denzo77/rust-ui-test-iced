@@ -1,12 +1,11 @@
 // use std::cell::Cell;
 
-use iced::{widget::{scrollable, container, text}, Command, Length, Element, Size};
-use iced_native::{widget::column};
+use iced::{widget::{scrollable, container, text, column}, Command, Length, Element, Size};
 use iced_lazy::responsive;
 
-use crate::Tab;
+use crate::{Tab, grid::Grid};
 
-const DEFAULT_TILE_SIZE: u16 = 128;
+const DEFAULT_TILE_SIZE: u16 = 200;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Message {
@@ -52,17 +51,25 @@ impl Tab for LazyScroll {
     }
 
     fn content(&self) -> Element<'_, Self::Message> {
-        let content = |size| {
-            let visible = visible_rows(self.elements.len(), DEFAULT_TILE_SIZE, size, self.current_offset);
-            scrollable(column(self.elements.iter().enumerate().map(|(i, s)| {
-                        container(text(format!("{}: {}", s, if visible.contains(i) { "visible" } else { "hidden" } ))
-                                .height(Length::Units(DEFAULT_TILE_SIZE))
-                                .vertical_alignment(iced::alignment::Vertical::Center))   
-                            .style(text_style::Text)
-                            .into()
-                    }).collect()
+        let content = |size: Size| {
+            let n_columns = size.width as usize / DEFAULT_TILE_SIZE as usize;
+            let visible = visible_tiles(n_columns, self.elements.len(), DEFAULT_TILE_SIZE, size, self.current_offset);
+
+            println!("\n update: visible: {visible:?}");
+
+            scrollable(column!(
+                    Grid::with_children(self.elements.iter().enumerate().map(|(i, s)| {
+                            container(text(format!("{}: {}", s, if visible.contains(i) { "vis" } else { "hid" } ))
+                                    .height(Length::Units(DEFAULT_TILE_SIZE))
+                                    .width(Length::Units(DEFAULT_TILE_SIZE))
+                                    .vertical_alignment(iced::alignment::Vertical::Center))
+                                .style(text_style::Text)
+                                .into()
+                        }).collect()
+                    )
+                    .columns(n_columns)
                 )
-                .width(Length::Fill) //.height(Length::Fill)
+                .width(Length::Fill)
             )
             .vertical_scroll(scrollable::Properties::new())
             .on_scroll(Message::Scrolled)
@@ -107,6 +114,13 @@ fn visible_rows(len: usize, element_height: u16, widget_size: Size, offset: scro
     assert!(last_row < len);
 
     BoundedRange{ start: first_row as usize, end: last_row as usize }
+}
+
+fn visible_tiles(n_columns: usize, len: usize, element_height: u16, widget_size: Size, offset: scrollable::RelativeOffset) -> BoundedRange {
+    let n_rows = len / n_columns;
+    let visible = visible_rows(n_rows, element_height, widget_size, offset);
+
+    BoundedRange { start: visible.start * n_columns, end: (visible.end + 1) * n_columns - 1 }
 }
 
 mod text_style {

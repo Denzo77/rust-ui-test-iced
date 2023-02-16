@@ -124,7 +124,7 @@ impl ImageTiles {
         let scrollable_content: Element<Message> = Element::from(scrollable(
                 column!(
                     Grid::with_children(self.images.iter()
-                        .map(|img| img.view(Length::Units(self.tile_size))).collect())
+                            .map(|img| img.view(Length::Units(self.tile_size))).collect())
                         .column_width(self.tile_size),
                     scroll_to_beginning()
                 )

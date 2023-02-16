@@ -66,6 +66,13 @@ where
         }
     }
 
+    pub fn columns(self, columns: usize) -> Self {
+        Self {
+            strategy: Strategy::Columns(columns),
+            ..self
+        }
+    }
+
     /// Adds an [`Element`](Element) to the [`Grid`](Grid).
     #[must_use]
     pub fn push<E>(mut self, element: E) -> Self
