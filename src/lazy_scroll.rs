@@ -55,7 +55,7 @@ impl Tab for LazyScroll {
             let n_columns = size.width as usize / DEFAULT_TILE_SIZE as usize;
             let visible = visible_tiles(n_columns, self.elements.len(), DEFAULT_TILE_SIZE, size, self.current_offset);
 
-            println!("\n update: visible: {visible:?}");
+            // println!("\n update: visible: {visible:?}");
 
             scrollable(column!(
                     Grid::with_children(self.elements.iter().enumerate().map(|(i, s)| {

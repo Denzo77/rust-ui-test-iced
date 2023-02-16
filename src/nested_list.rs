@@ -37,20 +37,8 @@ impl NestedListTab {
 
         Command::none()
     }
-}
 
-impl Tab for NestedListTab {
-    type Message = Message;
-
-    fn title(&self) -> String {
-        "Nested List".into()
-    }
-
-    fn tab_label(&self) -> iced_aw::TabLabel {
-        TabLabel::Text(self.title())
-    }
-
-    fn content(&self) -> iced::Element<'_, Self::Message> {
+    pub fn content(&self) -> iced::Element<'_, Message> {
         let row_height = 20;
 
         let entries: Element<_> = if self.internal.is_empty() {
@@ -59,7 +47,7 @@ impl Tab for NestedListTab {
         } else {
             // FIXME: Only show this on mouse over
             let add_new_button = |id| button(text("+").size(10))
-                .on_press(Self::Message::AddNewEntry { id })
+                .on_press(Message::AddNewEntry { id })
                 .height(Length::Fill)
                 .width(Length::Units(row_height));
 
@@ -75,7 +63,7 @@ impl Tab for NestedListTab {
                     row!(
                         Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
                         button(text(""))
-                            .on_press(Self::Message::Press { id })// TODO: Should this just be a checkbox?
+                            .on_press(Message::Press { id })// TODO: Should this just be a checkbox?
                             .height(Length::Fill)
                             .width(Length::Units(row_height)),
                         text(entry.description)

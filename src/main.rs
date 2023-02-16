@@ -10,6 +10,7 @@ mod nested_list;
 // mod trees;
 mod lazy_scroll;
 
+use iced_native::row;
 use lazy_scroll::LazyScroll;
 use nested_list::NestedListTab;
 use tile_pane::TilePane;
@@ -73,13 +74,18 @@ impl Application for Example {
         }
     }
 
-    fn view(&self) -> iced::Element<'_, Self::Message> {        
-        Tabs::new(self.active_tab, Message::TabSelected)
+    fn view(&self) -> iced::Element<'_, Self::Message> {   
+        let tabs = Tabs::new(self.active_tab, Message::TabSelected)
             .push(self.tile_tab.tab_label(), self.tile_tab.view().map(Self::Message::TilePane))
-            .push(self.list_tab.tab_label(), self.list_tab.view().map(Self::Message::NestedList))
+            // .push(self.list_tab.tab_label(), self.list_tab.view().map(Self::Message::NestedList))
             .push(self.lazy_scroll.tab_label(), self.lazy_scroll.view().map(Self::Message::LazyScroll))
-            .tab_bar_position(TabBarPosition::Top)
-            .into()
+            .tab_bar_position(TabBarPosition::Top);
+            // .into();
+
+        row!(
+            self.list_tab.content().map(Self::Message::NestedList),
+            tabs
+        ).into()
     }
 
     fn theme(&self) -> iced::Theme {
