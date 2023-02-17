@@ -39,6 +39,12 @@ impl NestedListTab {
             Message::AddNewEntry { id } => self.internal.get_mut(id).map(|entry| {
                 entry.children.push(Entry::new_empty());
             }),
+            Message::DescriptionEdited { id, label } => self.internal.get_mut(id).map(|entry| {
+                entry.text = label;
+            }),
+            Message::FinishedEdit { id } => self.internal.get_mut(id).map(|entry| {
+                entry.state = ShowChildren::Show;
+            }),
         };
 
         Command::none()
@@ -68,10 +74,12 @@ impl NestedListTab {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Message {
     Press { id: usize },
     AddNewEntry { id: usize },
+    DescriptionEdited { id: usize, label: String },
+    FinishedEdit { id: usize },
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -124,7 +132,13 @@ impl Entry {
         let has_children = !self.children.is_empty();
         let children_visible = visible && (self.state != ShowChildren::Hide);
 
-        let this = FlatEntry::new(depth, visible, has_children, &self.text);
+        let this = FlatEntry {
+            depth,
+            visible,
+            has_children,
+            editing: self.state == ShowChildren::Editing,
+            description: &self.text,
+        };
 
         // TODO: is there a way of doing this lazily?
         self.children.iter().fold(vec![this], |mut acc, entry| {
@@ -209,6 +223,13 @@ impl<'a> FlatEntry<'a> {
         Self { depth, visible, has_children, editing: false, description }
     }
 
+    fn new_empty(depth: u16) -> Self {
+        Self { depth, visible: true, has_children: false, editing: true, description: ""}
+    }
+
+    fn text_input_id(id: usize) -> text_input::Id {
+        text_input::Id::new(format!("Entry-{id}"))
+    }
     // fn update(&mut self) {}
 
     fn view<'b>(self, id: usize, row_height: u16) -> Element<'b, Message> {
@@ -218,11 +239,15 @@ impl<'a> FlatEntry<'a> {
             .height(Length::Fill)
             .width(Length::Units(row_height));
 
-        let content = 
-        // if self.editing {
-        //     let text_input = text_input("Entry Name", , )
-        // } else 
-        {
+        let content = if self.editing {
+            let id = id;
+            let text_input = text_input("Entry Name", self.description, 
+                    move |label| Message::DescriptionEdited { id, label })
+                    .id(Self::text_input_id(id))
+                    .on_submit(Message::FinishedEdit { id });
+            
+            row!(text_input)
+        } else {
             if !self.has_children {
                 row!(
                     Space::with_width(Length::Units(INDENT_SIZE * self.depth + row_height)),
