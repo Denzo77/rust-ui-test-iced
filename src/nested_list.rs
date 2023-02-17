@@ -251,27 +251,25 @@ impl<'a> FlatEntry<'a> {
                     .on_submit(Message::FinishedEdit { id });
             
             row!(spacing(false), text_input)
+        } else if !self.has_children {
+            row!(
+                spacing(false),
+                text(self.description),
+                Space::with_width(Length::Fill),
+                add_new_button(id),
+            )
         } else {
-            if !self.has_children {
-                row!(
-                    spacing(false),
-                    text(self.description),
-                    Space::with_width(Length::Fill),
-                    add_new_button(id),
-                )
-            } else {
-                row!(
-                    spacing(true),
-                    button(text(""))
-                        .on_press(Message::Press { id })// TODO: Should this just be a checkbox?
-                        .height(Length::Fill)
-                        .width(Length::Units(row_height)),
-                    text(self.description)
-                        .height(Length::Fill),
-                    Space::with_width(Length::Fill),
-                    add_new_button(id),
-                )
-            }
+            row!(
+                spacing(true),
+                button(text(""))
+                    .on_press(Message::Press { id })// TODO: Should this just be a checkbox?
+                    .height(Length::Fill)
+                    .width(Length::Units(row_height)),
+                text(self.description)
+                    .height(Length::Fill),
+                Space::with_width(Length::Fill),
+                add_new_button(id),
+            )
         };
 
         content
