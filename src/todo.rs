@@ -1,16 +1,18 @@
-use iced::{widget::{text_input, text, self, column, container, scrollable, button, checkbox, Text}, Application, Theme, Command, Element, Color, alignment, Length, theme, keyboard, Event, event, Font};
+use iced::{
+    alignment, event, keyboard, theme,
+    widget::{self, button, checkbox, column, container, scrollable, text, text_input, Text},
+    Application, Color, Command, Element, Event, Font, Length, Theme,
+};
 use iced_native::row;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-
 static INPUT_ID: Lazy<text_input::Id> = Lazy::new(text_input::Id::unique);
-
 
 #[derive(Debug)]
 pub enum Todos {
     Loading,
-    Loaded(State)
+    Loaded(State),
 }
 
 impl Application for Todos {
@@ -22,7 +24,7 @@ impl Application for Todos {
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
         (
             Todos::Loading,
-            Command::perform(SavedState::load(), Message::Loaded)
+            Command::perform(SavedState::load(), Message::Loaded),
         )
     }
 
@@ -61,22 +63,22 @@ impl Application for Todos {
                     Self::Message::InputChanged(value) => {
                         state.input_value = value;
                         Command::none()
-                    },
+                    }
                     Self::Message::CreateTask => {
                         if !state.input_value.is_empty() {
                             state.tasks.push(Task::new(state.input_value.clone()));
                             state.input_value.clear();
                         }
                         Command::none()
-                    },
+                    }
                     Self::Message::FilterChanged(filter) => {
                         state.filter = filter;
                         Command::none()
-                    },
+                    }
                     Self::Message::TaskMessage(id, TaskMessage::Delete) => {
                         state.tasks.remove(id);
                         Command::none()
-                    },
+                    }
                     Self::Message::TaskMessage(id, task_message) => {
                         if let Some(task) = state.tasks.get_mut(id) {
                             let should_focus = matches!(task_message, TaskMessage::Edit);
@@ -93,7 +95,7 @@ impl Application for Todos {
                         } else {
                             Command::none()
                         }
-                    },
+                    }
                     Self::Message::Saved(_) => {
                         state.saving = false;
                         saved = true;
@@ -105,7 +107,7 @@ impl Application for Todos {
                         } else {
                             widget::focus_next()
                         }
-                    },
+                    }
                     _ => Command::none(),
                 };
 
@@ -117,12 +119,14 @@ impl Application for Todos {
                     state.dirty = false;
                     state.saving = true;
 
-                    Command::perform(SavedState {
+                    Command::perform(
+                        SavedState {
                             input_value: state.input_value.clone(),
                             filter: state.filter,
                             tasks: state.tasks.clone(),
-                        }.save(),
-                        Self::Message::Saved
+                        }
+                        .save(),
+                        Self::Message::Saved,
                     )
                 } else {
                     Command::none()
@@ -136,38 +140,58 @@ impl Application for Todos {
     fn view(&self) -> iced::Element<'_, Self::Message, iced::Renderer<Self::Theme>> {
         match self {
             Self::Loading => loading_message(),
-            Self::Loaded(State { input_value, filter, tasks, .. }) => {
-                let title = text("todos").width(Length::Fill).size(100).style(Color::from([0.5; 3])).horizontal_alignment(alignment::Horizontal::Center);
-                let input = text_input("What needs to be done?", input_value, Message::InputChanged)
-                    .id(INPUT_ID.clone())
-                    .padding(15)
-                    .size(30)
-                    .on_submit(Self::Message::CreateTask);
+            Self::Loaded(State {
+                input_value,
+                filter,
+                tasks,
+                ..
+            }) => {
+                let title = text("todos")
+                    .width(Length::Fill)
+                    .size(100)
+                    .style(Color::from([0.5; 3]))
+                    .horizontal_alignment(alignment::Horizontal::Center);
+                let input =
+                    text_input("What needs to be done?", input_value, Message::InputChanged)
+                        .id(INPUT_ID.clone())
+                        .padding(15)
+                        .size(30)
+                        .on_submit(Self::Message::CreateTask);
                 let controls = view_controls(tasks, *filter);
                 let filtered_tasks = tasks.iter().filter(|task| filter.matches(task));
                 let tasks: Element<_> = if filtered_tasks.count() > 0 {
-                    column(tasks.iter().enumerate()
+                    column(
+                        tasks
+                            .iter()
+                            .enumerate()
                             .filter(|(_, task)| filter.matches(task))
-                            .map(|(i, task)| task.view(i).map(move |message| Self::Message::TaskMessage(i, message)))
-                            .collect()
-                    ).spacing(10).into()
+                            .map(|(i, task)| {
+                                task.view(i)
+                                    .map(move |message| Self::Message::TaskMessage(i, message))
+                            })
+                            .collect(),
+                    )
+                    .spacing(10)
+                    .into()
                 } else {
                     empty_message(match filter {
                         Filter::All => "You have not created a task yet...",
                         Filter::Active => "All your tasks are done.",
-                        Filter::Completed => "You have not completed a task yet..."
+                        Filter::Completed => "You have not completed a task yet...",
                     })
                 };
 
                 let content = column!(title, input, controls, tasks)
                     .spacing(20)
                     .max_width(800);
-                
-                scrollable(container(content)
-                    .width(Length::Fill)
-                    .padding(40)
-                    .center_x(),
-                ).into()
+
+                scrollable(
+                    container(content)
+                        .width(Length::Fill)
+                        .padding(40)
+                        .center_x(),
+                )
+                .into()
             }
         }
     }
@@ -175,9 +199,14 @@ impl Application for Todos {
     fn subscription(&self) -> iced::Subscription<Self::Message> {
         iced::subscription::events_with(|event, status| match (event, status) {
             (
-                Event::Keyboard(keyboard::Event::KeyPressed { key_code: keyboard::KeyCode::Tab, modifiers }),
+                Event::Keyboard(keyboard::Event::KeyPressed {
+                    key_code: keyboard::KeyCode::Tab,
+                    modifiers,
+                }),
                 event::Status::Ignored,
-            ) => Some(Message::TabPressed { shift: modifiers.shift() }),
+            ) => Some(Message::TabPressed {
+                shift: modifiers.shift(),
+            }),
             _ => None,
         })
     }
@@ -230,8 +259,10 @@ impl Task {
             TaskMessage::Completed(completed) => self.completed = completed,
             TaskMessage::Edit => self.state = TaskState::Editing,
             TaskMessage::DescriptionEdited(new) => self.description = new,
-            TaskMessage::FinishedEdition => if !self.description.is_empty() { 
-                self.state = TaskState::Idle;
+            TaskMessage::FinishedEdition => {
+                if !self.description.is_empty() {
+                    self.state = TaskState::Idle;
+                }
             }
             TaskMessage::Delete => (),
         }
@@ -242,27 +273,37 @@ impl Task {
             TaskState::Idle => {
                 let checkbox = checkbox(&self.description, self.completed, TaskMessage::Completed)
                     .width(Length::Fill);
-                
+
                 row!(
                     checkbox,
                     button(edit_icon())
                         .on_press(TaskMessage::Edit)
                         .padding(10)
                         .style(theme::Button::Text),
-                ).spacing(20).align_items(iced::Alignment::Center).into()
+                )
+                .spacing(20)
+                .align_items(iced::Alignment::Center)
+                .into()
             }
             TaskState::Editing => {
-                let text_input = text_input("Describe your task...", &self.description, TaskMessage::DescriptionEdited)
-                    .id(Self::text_input_id(id))
-                    .on_submit(TaskMessage::FinishedEdition)
-                    .padding(10);
+                let text_input = text_input(
+                    "Describe your task...",
+                    &self.description,
+                    TaskMessage::DescriptionEdited,
+                )
+                .id(Self::text_input_id(id))
+                .on_submit(TaskMessage::FinishedEdition)
+                .padding(10);
                 row!(
                     text_input,
                     button(row!(delete_icon(), "Delete").spacing(10))
                         .on_press(TaskMessage::Delete)
                         .padding(10)
                         .style(theme::Button::Destructive)
-                ).spacing(20).align_items(iced::Alignment::Center).into()
+                )
+                .spacing(20)
+                .align_items(iced::Alignment::Center)
+                .into()
             }
         }
     }
@@ -299,8 +340,8 @@ pub enum Filter {
 impl Filter {
     fn matches(&self, task: &Task) -> bool {
         match self {
-            Filter::All => true, // returns all tasks
-            Filter::Active => !task.completed, // only returns tasks that aren't completed yet
+            Filter::All => true,                 // returns all tasks
+            Filter::Active => !task.completed,   // only returns tasks that aren't completed yet
             Filter::Completed => task.completed, // only returns completed tasks
         }
     }
@@ -329,13 +370,13 @@ pub enum SaveError {
 pub struct SavedState {
     input_value: String,
     filter: Filter,
-    tasks: Vec<Task>
+    tasks: Vec<Task>,
 }
 
 impl SavedState {
     fn path() -> std::path::PathBuf {
         let mut path = std::env::current_dir().unwrap_or_default();
-        
+
         path.push("todos.json");
 
         path
@@ -345,9 +386,11 @@ impl SavedState {
         use async_std::prelude::*;
 
         let mut contents = String::new();
-        let mut file = async_std::fs::File::open(Self::path()).await
+        let mut file = async_std::fs::File::open(Self::path())
+            .await
             .map_err(|_| LoadError::File)?;
-        file.read_to_string(&mut contents).await
+        file.read_to_string(&mut contents)
+            .await
             .map_err(|_| LoadError::File)?;
 
         serde_json::from_str(&contents).map_err(|_| LoadError::Format)
@@ -360,14 +403,17 @@ impl SavedState {
         let path = Self::path();
 
         if let Some(dir) = path.parent() {
-            async_std::fs::create_dir_all(dir).await
+            async_std::fs::create_dir_all(dir)
+                .await
                 .map_err(|_| SaveError::File)?;
         }
 
         {
-            let mut file = async_std::fs::File::create(path).await
+            let mut file = async_std::fs::File::create(path)
+                .await
                 .map_err(|_| SaveError::File)?;
-            file.write_all(json.as_bytes()).await
+            file.write_all(json.as_bytes())
+                .await
                 .map_err(|_| SaveError::Write)?;
         }
 
@@ -377,11 +423,10 @@ impl SavedState {
     }
 }
 
-
 fn loading_message<'a>() -> Element<'a, Message> {
     let content = text("Loading")
-                .horizontal_alignment(alignment::Horizontal::Center)
-                .size(50);
+        .horizontal_alignment(alignment::Horizontal::Center)
+        .size(50);
 
     container(content)
         .width(Length::Fill)
@@ -413,26 +458,36 @@ fn view_controls(tasks: &[Task], current_filter: Filter) -> Element<Message> {
             theme::Button::Text
         };
 
-        button(text(label)
-            .size(16))
+        button(text(label).size(16))
             .style(button_style)
             .on_press(Message::FilterChanged(filter))
             .padding(8)
     };
 
     row!(
-        text(format!("{tasks_left} task{} left", if tasks_left == 1 { "" } else { "s" }))
-            .width(Length::Fill)
-            .size(16),
+        text(format!(
+            "{tasks_left} task{} left",
+            if tasks_left == 1 { "" } else { "s" }
+        ))
+        .width(Length::Fill)
+        .size(16),
         row!(
             filter_button("All", Filter::All, current_filter),
             filter_button("Active", Filter::Active, current_filter),
             filter_button("Completed", Filter::Completed, current_filter),
-        ).width(Length::Shrink).spacing(10)
-    ).spacing(20).align_items(iced::Alignment::Center).into()
+        )
+        .width(Length::Shrink)
+        .spacing(10)
+    )
+    .spacing(20)
+    .align_items(iced::Alignment::Center)
+    .into()
 }
 
-const ICONS: Font = Font::External { name: "Icons", bytes: include_bytes!("../resources/icons.ttf") };
+const ICONS: Font = Font::External {
+    name: "Icons",
+    bytes: include_bytes!("../resources/icons.ttf"),
+};
 
 fn icon(unicode: char) -> Text<'static> {
     text(unicode.to_string())

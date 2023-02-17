@@ -1,6 +1,9 @@
 use std::collections::BTreeSet;
 
-use iced::{Command, Element, Length, widget::{container, text, column, row, Space, button, text_input}};
+use iced::{
+    widget::{button, column, container, row, text, text_input, Space},
+    Command, Element, Length,
+};
 use once_cell::sync::Lazy;
 
 const INDENT_SIZE: u16 = 20;
@@ -14,11 +17,14 @@ impl TreeViewPane {
     pub fn new() -> Self {
         let internal = TreeView::with_children(vec![
             Entry::new("entry 1"),
-            Entry::with_children("entry 2", &[
-                Entry::new("2.1"),
-                Entry::with_children("2.2", &[Entry::new("2.2.1")])
-            ]),
-            Entry::new("entry 3")
+            Entry::with_children(
+                "entry 2",
+                &[
+                    Entry::new("2.1"),
+                    Entry::with_children("2.2", &[Entry::new("2.2.1")]),
+                ],
+            ),
+            Entry::new("entry 3"),
         ]);
 
         Self { internal }
@@ -37,7 +43,7 @@ impl TreeViewPane {
                     entry.state = new_state;
                 }
                 Command::none()
-            },
+            }
             Message::ToggleSelect { id } => {
                 self.internal.toggle_select(id);
                 println!("{:?}", self.internal.selected);
@@ -53,21 +59,21 @@ impl TreeViewPane {
                 let id = FlatEntry::text_input_id(id);
                 Command::batch(vec![
                     text_input::focus(id.clone()),
-                    text_input::select_all(id)
+                    text_input::select_all(id),
                 ])
-            },
+            }
             Message::DescriptionEdited { id, label } => {
                 if let Some(entry) = self.internal.get_mut(id) {
                     entry.text = label;
                 };
                 Command::none()
-            },
+            }
             Message::FinishedEdit { id } => {
                 if let Some(entry) = self.internal.get_mut(id) {
                     entry.state = ShowChildren::Show;
                 };
                 Command::none()
-            },
+            }
         }
     }
 
@@ -78,17 +84,18 @@ impl TreeViewPane {
             let content = text("No Entries").width(Length::Fill);
             container(content).into()
         } else {
-            let flat_view = self.internal
+            let flat_view = self
+                .internal
                 .to_vec()
                 .into_iter() // Can avoid this by converting directly, or just returning iter?
                 .enumerate()
                 .filter(|(_, entry)| entry.visible)
                 .map(|(id, entry)| entry.view(id, row_height, self.internal.selected.contains(&id)))
                 .collect();
-            
+
             column(flat_view)
-                    .width(Length::Units(200)) // TODO: make this fill
-                    .into()
+                .width(Length::Units(200)) // TODO: make this fill
+                .into()
         };
 
         entries
@@ -112,12 +119,11 @@ pub enum ShowChildren {
     Editing,
 }
 
-
 #[derive(Debug, Default, Clone)]
 struct Entry {
     text: String,
     state: ShowChildren,
-    children: Vec<Entry>
+    children: Vec<Entry>,
 }
 
 impl Entry {
@@ -164,10 +170,10 @@ impl Entry {
 
         // TODO: is there a way of doing this lazily?
         self.children.iter().fold(vec![this], |mut acc, entry| {
-                acc.extend(entry.to_flat_view(children_visible, depth + 1));
+            acc.extend(entry.to_flat_view(children_visible, depth + 1));
 
-                acc
-            })
+            acc
+        })
     }
 
     fn get_mut(&mut self, id: usize) -> (usize, Option<&mut Entry>) {
@@ -182,7 +188,7 @@ impl Entry {
             id = entry.0;
 
             if entry.1.is_some() {
-                return entry
+                return entry;
             }
         }
 
@@ -203,7 +209,10 @@ struct TreeView {
 
 impl TreeView {
     fn with_children(children: Vec<Entry>) -> Self {
-        Self { children, selected: BTreeSet::new() }
+        Self {
+            children,
+            selected: BTreeSet::new(),
+        }
     }
 
     fn is_empty(&self) -> bool {
@@ -211,8 +220,9 @@ impl TreeView {
     }
 
     fn to_vec(&self) -> Vec<FlatEntry> {
-        self.children.iter()
-            .flat_map(|entry| { entry.to_flat_view(true, 0) })
+        self.children
+            .iter()
+            .flat_map(|entry| entry.to_flat_view(true, 0))
             .collect()
     }
 
@@ -236,7 +246,7 @@ impl TreeView {
 
             let entry = entry.1;
             if entry.is_some() {
-                return entry
+                return entry;
             }
         }
 
@@ -250,16 +260,28 @@ struct FlatEntry<'a> {
     visible: bool,
     has_children: bool,
     editing: bool,
-    description: &'a str, 
+    description: &'a str,
 }
 
 impl<'a> FlatEntry<'a> {
     fn _new(depth: u16, visible: bool, has_children: bool, description: &'a str) -> Self {
-        Self { depth, visible, has_children, editing: false, description }
+        Self {
+            depth,
+            visible,
+            has_children,
+            editing: false,
+            description,
+        }
     }
 
     fn _new_empty(depth: u16) -> Self {
-        Self { depth, visible: true, has_children: false, editing: true, description: ""}
+        Self {
+            depth,
+            visible: true,
+            has_children: false,
+            editing: true,
+            description: "",
+        }
     }
 
     fn text_input_id(id: usize) -> text_input::Id {
@@ -275,13 +297,19 @@ impl<'a> FlatEntry<'a> {
         };
 
         // FIXME: Only show this on mouse over
-        let add_new_button = |id| button(text("+").size(10))
-            .on_press(Message::AddNewEntry { id })
-            .height(Length::Fill)
-            .width(Length::Units(row_height));
+        let add_new_button = |id| {
+            button(text("+").size(10))
+                .on_press(Message::AddNewEntry { id })
+                .height(Length::Fill)
+                .width(Length::Units(row_height))
+        };
 
         let element_row = |id, selected, has_children| {
-            let style = if selected { iced::theme::Button::Primary } else { iced::theme::Button::Text };
+            let style = if selected {
+                iced::theme::Button::Primary
+            } else {
+                iced::theme::Button::Text
+            };
             row!(
                 spacing(has_children),
                 button(text(self.description))
@@ -293,37 +321,33 @@ impl<'a> FlatEntry<'a> {
 
         let content = if self.editing {
             let id = id;
-            let text_input = text_input("Entry Name", self.description, 
-                    move |label| Message::DescriptionEdited { id, label })
-                    .id(Self::text_input_id(id))
-                    .on_submit(Message::FinishedEdit { id });
-            
+            let text_input = text_input("Entry Name", self.description, move |label| {
+                Message::DescriptionEdited { id, label }
+            })
+            .id(Self::text_input_id(id))
+            .on_submit(Message::FinishedEdit { id });
+
             row!(spacing(false), text_input)
         } else if !self.has_children {
             row!(
                 Space::with_width(Length::Units(row_height)),
-                element_row(id, selected, true)
-                    .width(Length::Fill),
+                element_row(id, selected, true).width(Length::Fill),
                 add_new_button(id),
             )
         } else {
             row!(
                 button(Space::with_width(Length::Fill))
-                    .on_press(Message::ToggleCollapse { id })// TODO: Should this just be a checkbox?
+                    .on_press(Message::ToggleCollapse { id }) // TODO: Should this just be a checkbox?
                     .height(Length::Fill)
                     .width(Length::Units(row_height)),
-                element_row(id, selected, false)
-                    .width(Length::Fill),
+                element_row(id, selected, false).width(Length::Fill),
                 add_new_button(id),
             )
         };
 
-        content
-            .height(Length::Units(row_height))
-            .into()
+        content.height(Length::Units(row_height)).into()
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -331,12 +355,13 @@ mod tests {
 
     #[test]
     fn flatten_entry_to_flat_view() {
-        let entry = Entry::with_children("1", &vec![
-            Entry::with_children("1.1", &vec![
-                Entry::new("1.1.1"),
-            ]),
-            Entry::new("2")
-        ]);
+        let entry = Entry::with_children(
+            "1",
+            &vec![
+                Entry::with_children("1.1", &vec![Entry::new("1.1.1")]),
+                Entry::new("2"),
+            ],
+        );
 
         let expected = vec![
             FlatEntry::_new(0, true, true, "1"),
@@ -344,7 +369,7 @@ mod tests {
             FlatEntry::_new(2, true, false, "1.1.1"),
             FlatEntry::_new(1, true, false, "2"),
         ];
-        
+
         let flattened = entry.to_flat_view(true, 0);
 
         assert_eq!(flattened, expected);
@@ -354,11 +379,14 @@ mod tests {
     fn flatten_nested_list_to_flat_view() {
         let nested_list = TreeView::with_children(vec![
             Entry::new("1"),
-            Entry::with_children("2", &vec![
-                Entry::new("2.1"),
-                Entry::with_children("2.2", &vec![Entry::new("2.2.1")])
-            ]),
-            Entry::new("3")
+            Entry::with_children(
+                "2",
+                &vec![
+                    Entry::new("2.1"),
+                    Entry::with_children("2.2", &vec![Entry::new("2.2.1")]),
+                ],
+            ),
+            Entry::new("3"),
         ]);
 
         let expected = vec![
@@ -369,7 +397,7 @@ mod tests {
             FlatEntry::_new(2, true, false, "2.2.1"),
             FlatEntry::_new(0, true, false, "3"),
         ];
-        
+
         let flattened = nested_list.to_vec();
 
         assert_eq!(flattened, expected);
@@ -379,11 +407,15 @@ mod tests {
     fn flatten_nested_list_to_flat_view_with_collapsed_entry() {
         let nested_list = TreeView::with_children(vec![
             Entry::new("1"),
-            Entry::with_children("2", &vec![
-                Entry::new("2.1"),
-                Entry::with_children("2.2", &vec![Entry::new("2.2.1")])
-            ])._collapse(),
-            Entry::new("3")
+            Entry::with_children(
+                "2",
+                &vec![
+                    Entry::new("2.1"),
+                    Entry::with_children("2.2", &vec![Entry::new("2.2.1")]),
+                ],
+            )
+            ._collapse(),
+            Entry::new("3"),
         ]);
 
         let expected = vec![
@@ -394,7 +426,7 @@ mod tests {
             FlatEntry::_new(2, false, false, "2.2.1"),
             FlatEntry::_new(0, true, false, "3"),
         ];
-        
+
         let flattened = nested_list.to_vec();
 
         assert_eq!(flattened, expected);
@@ -404,13 +436,14 @@ mod tests {
     fn nested_list_get_correct_entry() {
         let mut nested_list = TreeView::with_children(vec![
             Entry::new("1"),
-            Entry::with_children("2", &vec![
-                Entry::new("2.1"),
-                Entry::with_children("2.2", &vec![
-                    Entry::new("2.2.1")
-                ])
-            ]),
-            Entry::new("3")
+            Entry::with_children(
+                "2",
+                &vec![
+                    Entry::new("2.1"),
+                    Entry::with_children("2.2", &vec![Entry::new("2.2.1")]),
+                ],
+            ),
+            Entry::new("3"),
         ]);
 
         let expected = vec![
@@ -429,6 +462,5 @@ mod tests {
 
             assert_eq!(&entry, expect);
         }
-
     }
 }

@@ -1,11 +1,15 @@
-use iced::{Settings, Element, widget::{Column, Text, Container}, Length, alignment::{Horizontal, Vertical}, Theme, Application, Command};
-use iced_aw::{TabBarPosition, Tabs, TabLabel};
+use iced::{
+    alignment::{Horizontal, Vertical},
+    widget::{Column, Container, Text},
+    Application, Command, Element, Length, Settings, Theme,
+};
+use iced_aw::{TabBarPosition, TabLabel, Tabs};
 
+mod checklist;
 mod grid;
+mod nested_list;
 mod tile_pane;
 mod todo;
-mod checklist;
-mod nested_list;
 // mod selection_tree;
 // mod trees;
 mod lazy_scroll;
@@ -24,13 +28,12 @@ fn main() -> iced::Result {
     Example::run(Settings::default())
 }
 
-
 #[derive(Clone, Debug)]
 enum Message {
     TabSelected(usize), // TODO: Make enum
     TilePane(tile_pane::Message),
     NestedList(nested_list::Message),
-    LazyScroll(lazy_scroll::Message)
+    LazyScroll(lazy_scroll::Message),
 }
 
 struct Example {
@@ -54,7 +57,7 @@ impl Application for Example {
                 list_tab: TreeViewPane::new(),
                 lazy_scroll: LazyScroll::new(),
             },
-            Command::none()
+            Command::none(),
         )
     }
 
@@ -67,25 +70,35 @@ impl Application for Example {
             Self::Message::TabSelected(selected) => {
                 self.active_tab = selected;
                 Command::none()
-            },
-            Self::Message::TilePane(message) => { self.tile_tab.update(message).map(Self::Message::TilePane) },
-            Self::Message::NestedList(message) => { self.list_tab.update(message).map(Self::Message::NestedList) },
-            Self::Message::LazyScroll(message) => { self.lazy_scroll.update(message).map(Self::Message::LazyScroll) },
+            }
+            Self::Message::TilePane(message) => {
+                self.tile_tab.update(message).map(Self::Message::TilePane)
+            }
+            Self::Message::NestedList(message) => {
+                self.list_tab.update(message).map(Self::Message::NestedList)
+            }
+            Self::Message::LazyScroll(message) => self
+                .lazy_scroll
+                .update(message)
+                .map(Self::Message::LazyScroll),
         }
     }
 
-    fn view(&self) -> iced::Element<'_, Self::Message> {   
+    fn view(&self) -> iced::Element<'_, Self::Message> {
         let tabs = Tabs::new(self.active_tab, Message::TabSelected)
-            .push(self.tile_tab.tab_label(), self.tile_tab.view().map(Self::Message::TilePane))
+            .push(
+                self.tile_tab.tab_label(),
+                self.tile_tab.view().map(Self::Message::TilePane),
+            )
             // .push(self.list_tab.tab_label(), self.list_tab.view().map(Self::Message::NestedList))
-            .push(self.lazy_scroll.tab_label(), self.lazy_scroll.view().map(Self::Message::LazyScroll))
+            .push(
+                self.lazy_scroll.tab_label(),
+                self.lazy_scroll.view().map(Self::Message::LazyScroll),
+            )
             .tab_bar_position(TabBarPosition::Top);
-            // .into();
+        // .into();
 
-        row!(
-            self.list_tab.content().map(Self::Message::NestedList),
-            tabs
-        ).into()
+        row!(self.list_tab.content().map(Self::Message::NestedList), tabs).into()
     }
 
     fn theme(&self) -> iced::Theme {
