@@ -231,6 +231,12 @@ impl<'a> FlatEntry<'a> {
     // fn update(&mut self) {}
 
     fn view<'b>(self, id: usize, row_height: u16) -> Element<'b, Message> {
+        let spacing = |has_button| {
+            let has_button = if has_button { 0 } else { row_height };
+            let width = INDENT_SIZE * self.depth + has_button;
+            Space::with_width(Length::Units(width))
+        };
+
         // FIXME: Only show this on mouse over
         let add_new_button = |id| button(text("+").size(10))
             .on_press(Message::AddNewEntry { id })
@@ -244,18 +250,18 @@ impl<'a> FlatEntry<'a> {
                     .id(Self::text_input_id(id))
                     .on_submit(Message::FinishedEdit { id });
             
-            row!(text_input)
+            row!(spacing(false), text_input)
         } else {
             if !self.has_children {
                 row!(
-                    Space::with_width(Length::Units(INDENT_SIZE * self.depth + row_height)),
+                    spacing(false),
                     text(self.description),
                     Space::with_width(Length::Fill),
                     add_new_button(id),
                 )
             } else {
                 row!(
-                    Space::with_width(Length::Units(INDENT_SIZE * self.depth)),
+                    spacing(true),
                     button(text(""))
                         .on_press(Message::Press { id })// TODO: Should this just be a checkbox?
                         .height(Length::Fill)
