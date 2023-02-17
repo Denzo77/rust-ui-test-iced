@@ -25,27 +25,42 @@ impl TreeViewPane {
 
     pub fn update(&mut self, message: Message) -> iced::Command<Message> {
         match message {
-            Message::Press { id } => self.internal.get_mut(id).map(|entry| {
-                let new_state = match entry.state {
-                    ShowChildren::Hide => ShowChildren::Show,
-                    ShowChildren::Show => ShowChildren::Hide,
-                    ShowChildren::Editing => unreachable!(),
-                };
+            Message::Press { id } => {
+                self.internal.get_mut(id).map(|entry| {
+                    let new_state = match entry.state {
+                        ShowChildren::Hide => ShowChildren::Show,
+                        ShowChildren::Show => ShowChildren::Hide,
+                        ShowChildren::Editing => unreachable!(),
+                    };
 
-                entry.state = new_state;
-            }),
-            Message::AddNewEntry { id } => self.internal.get_mut(id).map(|entry| {
-                entry.children.push(Entry::new_empty());
-            }),
-            Message::DescriptionEdited { id, label } => self.internal.get_mut(id).map(|entry| {
-                entry.text = label;
-            }),
-            Message::FinishedEdit { id } => self.internal.get_mut(id).map(|entry| {
-                entry.state = ShowChildren::Show;
-            }),
-        };
-
-        Command::none()
+                    entry.state = new_state;
+                });
+                Command::none()
+            },
+            Message::AddNewEntry { id } => {
+                self.internal.get_mut(id).map(|entry| {
+                    entry.children.push(Entry::new_empty());
+                });
+                // FIXME: Id's don't match so it doesn't focus properly?
+                let id = FlatEntry::text_input_id(id);
+                Command::batch(vec![
+                    text_input::focus(id.clone()),
+                    text_input::select_all(id)
+                ])
+            },
+            Message::DescriptionEdited { id, label } => {
+                self.internal.get_mut(id).map(|entry| {
+                    entry.text = label;
+                });
+                Command::none()
+            },
+            Message::FinishedEdit { id } => {
+                self.internal.get_mut(id).map(|entry| {
+                    entry.state = ShowChildren::Show;
+                });
+                Command::none()
+            },
+        }
     }
 
     pub fn content(&self) -> iced::Element<'_, Message> {
