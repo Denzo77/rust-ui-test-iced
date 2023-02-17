@@ -12,7 +12,7 @@ mod lazy_scroll;
 
 use iced_native::row;
 use lazy_scroll::LazyScroll;
-use nested_list::NestedListTab;
+use nested_list::TreeViewPane;
 use tile_pane::TilePane;
 
 fn main() -> iced::Result {
@@ -36,7 +36,7 @@ enum Message {
 struct Example {
     active_tab: usize,
     tile_tab: TilePane,
-    list_tab: NestedListTab,
+    list_tab: TreeViewPane,
     lazy_scroll: LazyScroll,
 }
 
@@ -51,7 +51,7 @@ impl Application for Example {
             Self {
                 active_tab: 0,
                 tile_tab: TilePane::new(),
-                list_tab: NestedListTab::new(),
+                list_tab: TreeViewPane::new(),
                 lazy_scroll: LazyScroll::new(),
             },
             Command::none()

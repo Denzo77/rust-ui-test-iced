@@ -1,19 +1,17 @@
-use core::panic;
 
 use iced::{Command, Element, Length, widget::{container, text, column, row, Space, button, text_input}};
-use iced_aw::TabLabel;
 use once_cell::sync::Lazy;
 
 const INDENT_SIZE: u16 = 20;
 static INPUT_ID: Lazy<text_input::Id> = Lazy::new(text_input::Id::unique);
 
-pub struct NestedListTab {
-    internal: NestedList,
+pub struct TreeViewPane {
+    internal: TreeView,
 }
 
-impl NestedListTab {
+impl TreeViewPane {
     pub fn new() -> Self {
-        let internal = NestedList::with_children(vec![
+        let internal = TreeView::with_children(vec![
             Entry::new("entry 1"),
             Entry::with_children("entry 2", &[
                 Entry::new("2.1"),
@@ -174,11 +172,11 @@ impl Entry {
 }
 
 #[derive(Debug, Default, Clone)]
-struct NestedList {
+struct TreeView {
     children: Vec<Entry>,
 }
 
-impl NestedList {
+impl TreeView {
     fn with_children(children: Vec<Entry>) -> Self {
         Self { children }
     }
@@ -219,11 +217,11 @@ struct FlatEntry<'a> {
 }
 
 impl<'a> FlatEntry<'a> {
-    fn new(depth: u16, visible: bool, has_children: bool, description: &'a str) -> Self {
+    fn _new(depth: u16, visible: bool, has_children: bool, description: &'a str) -> Self {
         Self { depth, visible, has_children, editing: false, description }
     }
 
-    fn new_empty(depth: u16) -> Self {
+    fn _new_empty(depth: u16) -> Self {
         Self { depth, visible: true, has_children: false, editing: true, description: ""}
     }
 
@@ -291,10 +289,10 @@ mod tests {
         ]);
 
         let expected = vec![
-            FlatEntry::new(0, true, true, "1"),
-            FlatEntry::new(1, true, true, "1.1"),
-            FlatEntry::new(2, true, false, "1.1.1"),
-            FlatEntry::new(1, true, false, "2"),
+            FlatEntry::_new(0, true, true, "1"),
+            FlatEntry::_new(1, true, true, "1.1"),
+            FlatEntry::_new(2, true, false, "1.1.1"),
+            FlatEntry::_new(1, true, false, "2"),
         ];
         
         let flattened = entry.to_flat_view(true, 0);
@@ -304,7 +302,7 @@ mod tests {
 
     #[test]
     fn flatten_nested_list_to_flat_view() {
-        let nested_list = NestedList::with_children(vec![
+        let nested_list = TreeView::with_children(vec![
             Entry::new("1"),
             Entry::with_children("2", &vec![
                 Entry::new("2.1"),
@@ -314,12 +312,12 @@ mod tests {
         ]);
 
         let expected = vec![
-            FlatEntry::new(0, true, false, "1"),
-            FlatEntry::new(0, true, true, "2"),
-            FlatEntry::new(1, true, false, "2.1"),
-            FlatEntry::new(1, true, true, "2.2"),
-            FlatEntry::new(2, true, false, "2.2.1"),
-            FlatEntry::new(0, true, false, "3"),
+            FlatEntry::_new(0, true, false, "1"),
+            FlatEntry::_new(0, true, true, "2"),
+            FlatEntry::_new(1, true, false, "2.1"),
+            FlatEntry::_new(1, true, true, "2.2"),
+            FlatEntry::_new(2, true, false, "2.2.1"),
+            FlatEntry::_new(0, true, false, "3"),
         ];
         
         let flattened = nested_list.to_vec();
@@ -329,7 +327,7 @@ mod tests {
 
     #[test]
     fn flatten_nested_list_to_flat_view_with_collapsed_entry() {
-        let nested_list = NestedList::with_children(vec![
+        let nested_list = TreeView::with_children(vec![
             Entry::new("1"),
             Entry::with_children("2", &vec![
                 Entry::new("2.1"),
@@ -339,12 +337,12 @@ mod tests {
         ]);
 
         let expected = vec![
-            FlatEntry::new(0, true, false, "1"),
-            FlatEntry::new(0, true, true, "2"),
-            FlatEntry::new(1, false, false, "2.1"),
-            FlatEntry::new(1, false, true, "2.2"),
-            FlatEntry::new(2, false, false, "2.2.1"),
-            FlatEntry::new(0, true, false, "3"),
+            FlatEntry::_new(0, true, false, "1"),
+            FlatEntry::_new(0, true, true, "2"),
+            FlatEntry::_new(1, false, false, "2.1"),
+            FlatEntry::_new(1, false, true, "2.2"),
+            FlatEntry::_new(2, false, false, "2.2.1"),
+            FlatEntry::_new(0, true, false, "3"),
         ];
         
         let flattened = nested_list.to_vec();
@@ -354,7 +352,7 @@ mod tests {
 
     #[test]
     fn nested_list_get_correct_entry() {
-        let mut nested_list = NestedList::with_children(vec![
+        let mut nested_list = TreeView::with_children(vec![
             Entry::new("1"),
             Entry::with_children("2", &vec![
                 Entry::new("2.1"),
