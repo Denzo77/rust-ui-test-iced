@@ -43,7 +43,7 @@ struct Example {
 impl Application for Example {
     type Message = Message;
     type Executor = iced::executor::Default;
-    type Theme = iced::theme::Theme;
+    type Theme = iced::Theme;
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
@@ -93,7 +93,6 @@ impl Application for Example {
     }
 }
 
-
 enum Icon {
     _Tile,
     _List,
@@ -139,4 +138,3 @@ trait Tab {
 
     fn content(&self) -> Element<'_, Self::Message>;
 }
-

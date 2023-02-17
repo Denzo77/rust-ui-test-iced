@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 
 use iced::{Command, Element, Length, widget::{container, text, column, row, Space, button, text_input}};
 use once_cell::sync::Lazy;
@@ -25,8 +26,8 @@ impl TreeViewPane {
 
     pub fn update(&mut self, message: Message) -> iced::Command<Message> {
         match message {
-            Message::Press { id } => {
-                self.internal.get_mut(id).map(|entry| {
+            Message::ToggleCollapse { id } => {
+                if let Some(entry) = self.internal.get_mut(id) {
                     let new_state = match entry.state {
                         ShowChildren::Hide => ShowChildren::Show,
                         ShowChildren::Show => ShowChildren::Hide,
@@ -34,13 +35,20 @@ impl TreeViewPane {
                     };
 
                     entry.state = new_state;
-                });
+                }
                 Command::none()
             },
+            Message::ToggleSelect { id } => {
+                self.internal.toggle_select(id);
+                println!("{:?}", self.internal.selected);
+                Command::none()
+            }
             Message::AddNewEntry { id } => {
-                self.internal.get_mut(id).map(|entry| {
+                // It doesn't make sense to preserve selections when adding an entry.
+                self.internal.clear_selected();
+                if let Some(entry) = self.internal.get_mut(id) {
                     entry.children.push(Entry::new_empty());
-                });
+                };
                 // FIXME: Id's don't match so it doesn't focus properly?
                 let id = FlatEntry::text_input_id(id);
                 Command::batch(vec![
@@ -49,15 +57,15 @@ impl TreeViewPane {
                 ])
             },
             Message::DescriptionEdited { id, label } => {
-                self.internal.get_mut(id).map(|entry| {
+                if let Some(entry) = self.internal.get_mut(id) {
                     entry.text = label;
-                });
+                };
                 Command::none()
             },
             Message::FinishedEdit { id } => {
-                self.internal.get_mut(id).map(|entry| {
+                if let Some(entry) = self.internal.get_mut(id) {
                     entry.state = ShowChildren::Show;
-                });
+                };
                 Command::none()
             },
         }
@@ -75,7 +83,7 @@ impl TreeViewPane {
                 .into_iter() // Can avoid this by converting directly, or just returning iter?
                 .enumerate()
                 .filter(|(_, entry)| entry.visible)
-                .map(|(id, entry)| entry.view(id, row_height))
+                .map(|(id, entry)| entry.view(id, row_height, self.internal.selected.contains(&id)))
                 .collect();
             
             column(flat_view)
@@ -89,7 +97,8 @@ impl TreeViewPane {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Message {
-    Press { id: usize },
+    ToggleCollapse { id: usize },
+    ToggleSelect { id: usize },
     AddNewEntry { id: usize },
     DescriptionEdited { id: usize, label: String },
     FinishedEdit { id: usize },
@@ -189,11 +198,12 @@ impl Entry {
 #[derive(Debug, Default, Clone)]
 struct TreeView {
     children: Vec<Entry>,
+    selected: BTreeSet<usize>,
 }
 
 impl TreeView {
     fn with_children(children: Vec<Entry>) -> Self {
-        Self { children }
+        Self { children, selected: BTreeSet::new() }
     }
 
     fn is_empty(&self) -> bool {
@@ -204,6 +214,18 @@ impl TreeView {
         self.children.iter()
             .flat_map(|entry| { entry.to_flat_view(true, 0) })
             .collect()
+    }
+
+    fn clear_selected(&mut self) {
+        self.selected.clear()
+    }
+
+    fn toggle_select(&mut self, id: usize) {
+        if self.selected.contains(&id) {
+            self.selected.remove(&id);
+        } else {
+            self.selected.insert(id);
+        }
     }
 
     fn get_mut(&mut self, id: usize) -> Option<&mut Entry> {
@@ -245,7 +267,7 @@ impl<'a> FlatEntry<'a> {
     }
     // fn update(&mut self) {}
 
-    fn view<'b>(self, id: usize, row_height: u16) -> Element<'b, Message> {
+    fn view<'b>(self, id: usize, row_height: u16, selected: bool) -> Element<'b, Message> {
         let spacing = |has_button| {
             let has_button = if has_button { 0 } else { row_height };
             let width = INDENT_SIZE * self.depth + has_button;
@@ -258,6 +280,17 @@ impl<'a> FlatEntry<'a> {
             .height(Length::Fill)
             .width(Length::Units(row_height));
 
+        let element_row = |id, selected, has_children| {
+            let style = if selected { iced::theme::Button::Primary } else { iced::theme::Button::Text };
+            row!(
+                spacing(has_children),
+                button(text(self.description))
+                    .style(style)
+                    .padding(0)
+                    .on_press(Message::ToggleSelect { id })
+            )
+        };
+
         let content = if self.editing {
             let id = id;
             let text_input = text_input("Entry Name", self.description, 
@@ -268,21 +301,19 @@ impl<'a> FlatEntry<'a> {
             row!(spacing(false), text_input)
         } else if !self.has_children {
             row!(
-                spacing(false),
-                text(self.description),
-                Space::with_width(Length::Fill),
+                Space::with_width(Length::Units(row_height)),
+                element_row(id, selected, true)
+                    .width(Length::Fill),
                 add_new_button(id),
             )
         } else {
             row!(
-                spacing(true),
-                button(text(""))
-                    .on_press(Message::Press { id })// TODO: Should this just be a checkbox?
+                button(Space::with_width(Length::Fill))
+                    .on_press(Message::ToggleCollapse { id })// TODO: Should this just be a checkbox?
                     .height(Length::Fill)
                     .width(Length::Units(row_height)),
-                text(self.description)
-                    .height(Length::Fill),
-                Space::with_width(Length::Fill),
+                element_row(id, selected, false)
+                    .width(Length::Fill),
                 add_new_button(id),
             )
         };
