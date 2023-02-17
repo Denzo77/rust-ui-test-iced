@@ -1,10 +1,11 @@
 use core::panic;
 
-use iced::{Command, Element, Length, widget::{container, text, column, row, Space, button}};
+use iced::{Command, Element, Length, widget::{container, text, column, row, Space, button, text_input}};
 use iced_aw::TabLabel;
-use crate::Tab;
+use once_cell::sync::Lazy;
 
 const INDENT_SIZE: u16 = 20;
+static INPUT_ID: Lazy<text_input::Id> = Lazy::new(text_input::Id::unique);
 
 pub struct NestedListTab {
     internal: NestedList,
@@ -50,48 +51,17 @@ impl NestedListTab {
             let content = text("No Entries").width(Length::Fill);
             container(content).into()
         } else {
-            // FIXME: Only show this on mouse over
-            let add_new_button = |id| button(text("+").size(10))
-                .on_press(Message::AddNewEntry { id })
-                .height(Length::Fill)
-                .width(Length::Units(row_height));
-
-            let flat_entry = |(id, entry): (usize, FlatEntry)| {
-                if !entry.has_children {
-                    row!(
-                        Space::with_width(Length::Units(INDENT_SIZE * entry.depth + row_height)),
-                        text(entry.description),
-                        Space::with_width(Length::Fill),
-                        add_new_button(id),
-                    )
-                } else {
-                    row!(
-                        Space::with_width(Length::Units(INDENT_SIZE * entry.depth)),
-                        button(text(""))
-                            .on_press(Message::Press { id })// TODO: Should this just be a checkbox?
-                            .height(Length::Fill)
-                            .width(Length::Units(row_height)),
-                        text(entry.description)
-                            .height(Length::Fill),
-                        Space::with_width(Length::Fill),
-                        add_new_button(id),
-                    )
-                }
-            };
-
             let flat_view = self.internal
                 .to_vec()
                 .into_iter() // Can avoid this by converting directly, or just returning iter?
                 .enumerate()
                 .filter(|(_, entry)| entry.visible)
-                .map(|entry| flat_entry(entry)
-                    .width(Length::Units(200)) // TODO: make this fill
-                    .height(Length::Units(row_height))
-                    .into())
+                .map(|(id, entry)| entry.view(id, row_height))
                 .collect();
             
             column(flat_view)
-                .into()
+                    .width(Length::Units(200)) // TODO: make this fill
+                    .into()
         };
 
         entries
@@ -226,16 +196,58 @@ impl NestedList {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-struct FlatEntry {
+struct FlatEntry<'a> {
     depth: u16,
     visible: bool,
     has_children: bool,
-    description: String,
+    editing: bool,
+    description: &'a str, 
 }
 
-impl FlatEntry {
-    fn new(depth: u16, visible: bool, has_children: bool, description: &str) -> Self {
-        Self { depth, visible, has_children, description: description.into() }
+impl<'a> FlatEntry<'a> {
+    fn new(depth: u16, visible: bool, has_children: bool, description: &'a str) -> Self {
+        Self { depth, visible, has_children, editing: false, description }
+    }
+
+    // fn update(&mut self) {}
+
+    fn view<'b>(self, id: usize, row_height: u16) -> Element<'b, Message> {
+        // FIXME: Only show this on mouse over
+        let add_new_button = |id| button(text("+").size(10))
+            .on_press(Message::AddNewEntry { id })
+            .height(Length::Fill)
+            .width(Length::Units(row_height));
+
+        let content = 
+        // if self.editing {
+        //     let text_input = text_input("Entry Name", , )
+        // } else 
+        {
+            if !self.has_children {
+                row!(
+                    Space::with_width(Length::Units(INDENT_SIZE * self.depth + row_height)),
+                    text(self.description),
+                    Space::with_width(Length::Fill),
+                    add_new_button(id),
+                )
+            } else {
+                row!(
+                    Space::with_width(Length::Units(INDENT_SIZE * self.depth)),
+                    button(text(""))
+                        .on_press(Message::Press { id })// TODO: Should this just be a checkbox?
+                        .height(Length::Fill)
+                        .width(Length::Units(row_height)),
+                    text(self.description)
+                        .height(Length::Fill),
+                    Space::with_width(Length::Fill),
+                    add_new_button(id),
+                )
+            }
+        };
+
+        content
+            .height(Length::Units(row_height))
+            .into()
     }
 }
 
